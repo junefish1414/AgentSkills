@@ -9,566 +9,474 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f8f9fa;
-      color: #1a1a1a;
-      line-height: 1.7;
-      padding: 2rem;
-      max-width: 960px;
-      margin: 0 auto;
+      background: #f8f9fa; color: #1a1a1a;
+      line-height: 1.7; padding: 2rem; max-width: 960px; margin: 0 auto;
     }
-
     .spec-meta {
-      background: #fff;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 2rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 0.5rem 2rem;
     }
     .spec-meta .meta-item { font-size: 0.85rem; color: #555; }
     .spec-meta .meta-item strong { color: #1a1a1a; }
-
-    h1 { font-size: 1.6rem; margin-bottom: 1rem; }
-    h2 {
-      font-size: 1.3rem;
-      margin: 2.5rem 0 1rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 2px solid #e0e0e0;
-    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.75rem; }
+    h2 { font-size: 1.3rem; margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid #e0e0e0; }
     h3 { font-size: 1.1rem; margin: 1.5rem 0 0.75rem; color: #333; }
-    h4 { font-size: 1rem; margin: 1.2rem 0 0.5rem; color: #444; }
-
+    h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: #444; }
     p { margin-bottom: 0.75rem; }
     ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
     li { margin-bottom: 0.35rem; }
-    code {
-      background: #f0f0f0;
-      padding: 0.15rem 0.4rem;
-      border-radius: 3px;
-      font-size: 0.9em;
-      font-family: "SF Mono", Consolas, monospace;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1rem 0;
-      font-size: 0.9rem;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 0.5rem 0.75rem;
-      text-align: left;
-    }
+    code { background: #f0f0f0; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.9em; font-family: "SF Mono", "Fira Code", monospace; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid #ddd; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
     th { background: #f5f5f5; font-weight: 600; }
     tr:hover { background: #fafafa; }
-
-    pre.mermaid {
-      background: #fff;
-      border: 1px solid #e8e8e8;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin: 1rem 0;
-      text-align: center;
-    }
-
-    .warning {
-      background: #fff8e1;
-      border-left: 4px solid #ffc107;
-      padding: 0.75rem 1rem;
-      margin: 0.75rem 0;
-      border-radius: 0 4px 4px 0;
-      font-size: 0.9rem;
-    }
-
+    .mermaid { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; text-align: center; overflow-x: auto; }
+    .warning { background: #fff8e1; border-left: 4px solid #ffc107; padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 0 4px 4px 0; font-size: 0.9rem; }
+    .warning-red { background: #fff3f3; border-left: 4px solid #f44336; padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 0 4px 4px 0; font-size: 0.9rem; }
     input[type="checkbox"] { margin-right: 0.5rem; }
-
-    .uc-block {
-      background: #fff;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 1.25rem 1.5rem;
-      margin: 1rem 0 1.5rem;
-    }
-
-    .tag {
-      display: inline-block;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-right: 0.4rem;
-    }
-    .tag-patch { background: #e3f2fd; color: #1565c0; }
-    .tag-mixed { background: #f3e5f5; color: #6a1b9a; }
-
-    .spec-footer {
-      margin-top: 3rem;
-      padding-top: 1rem;
-      border-top: 1px solid #e0e0e0;
-      font-size: 0.8rem;
-      color: #888;
-    }
-
-    hr { border: none; border-top: 1px solid #eee; margin: 2rem 0; }
+    .spec-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e0e0e0; font-size: 0.8rem; color: #888; }
+    .section-badge { display: inline-block; font-size: 0.75rem; background: #e3f2fd; color: #1565c0; padding: 0.15rem 0.5rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; font-weight: 500; }
+    .po-section { background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin: 2rem 0; }
+    .po-section h2 { border-bottom: 2px solid #e0e0e0; }
+    .blocker-q { background: #fff3f3; border-left: 4px solid #f44336; padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 0 4px 4px 0; }
+    .warning-q { background: #fffde7; border-left: 4px solid #ffc107; padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 0 4px 4px 0; }
+    .info-q { background: #f3f9f3; border-left: 4px solid #4caf50; padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 0 4px 4px 0; }
+    .q-title { font-weight: 600; margin-bottom: 0.5rem; }
+    strong { font-weight: 600; }
+    a { color: #1565c0; }
   </style>
 </head>
 <body>
-
-  <h1>📋 VIPOP-44307 — [暫停權限調整優化] ATS動線與VIP更一致+顯目提示</h1>
-
+  <h1>📋 VIPOP-44307 — ATS 甄試履歷 廣告暫停/關閉時操作動線優化與提示強化</h1>
   <div class="spec-meta">
-    <div class="meta-item"><strong>Scope：</strong><span class="tag tag-patch">patch</span></div>
-    <div class="meta-item"><strong>Type：</strong><span class="tag tag-mixed">mixed</span></div>
-    <div class="meta-item"><strong>Source：</strong>jira + axure + figma</div>
-    <div class="meta-item"><strong>Created：</strong>2026-04-10</div>
+    <div class="meta-item"><strong>Scope：</strong>feature</div>
+    <div class="meta-item"><strong>Type：</strong>mixed（interaction + content）</div>
+    <div class="meta-item"><strong>Source：</strong>Jira + Axure</div>
+    <div class="meta-item"><strong>Created：</strong>2026-04-21</div>
     <div class="meta-item"><strong>Status：</strong>In Testing</div>
     <div class="meta-item"><strong>Assignee：</strong>June Wang 王歆瑜</div>
   </div>
 
-  <h2>1. 背景</h2>
-  <p>在 2026/03/19 的 demo 會議中，主管們回饋 ATS（Applicant Tracking System）在廣告暫停（Pause）或關閉（Off）狀態下的操作動線與 VIP 端差異過大，導致使用者誤以為系統發生異常。</p>
-  <p>現行大原則：廣告 Pause/Off 前已進入 ATS 甄試流程的履歷，仍可持續查看並進行流程管理，但 BC 溝通規則與 VIP 相同，不可發送。然而舊有介面並未明確告知用戶此限制，且部分按鈕直接隱藏，造成用戶困惑。</p>
-  <p>2026/04/27 版本調整：主要改為「顯示但 disable + 提供 CTA 引導開啟廣告」，使 ATS 與 VIP 動線一致，並加上後端阻擋防止漏洞。</p>
-
-  <h2>2. 目標</h2>
-  <ul>
-    <li>企業用戶能在廣告暫停/關閉時，清楚知道哪些功能受到限制及原因</li>
-    <li>企業用戶能透過 CTA 快速前往開啟廣告，減少操作斷點</li>
-    <li>避免使用者誤以為系統發生問題而產生客訴</li>
-  </ul>
-
-  <h2>3. User Stories</h2>
-  <ul>
-    <li>身為企業 HR，我想要在廣告暫停/關閉時仍能看到邀約相關按鈕，以便我了解為何無法操作並知道如何解決</li>
-    <li>身為企業 HR，我想要在新增行程的步驟中，提前知道無法通知求職者，以便我能在操作前決定是否先開啟廣告</li>
-    <li>身為企業 HR，我想要在修改/刪除行程時收到清楚的警示，以便我確認對方已知行程異動</li>
-    <li>身為企業 HR，我想要在取消錄用時看到明確提示，以便我確保求職者已知此異動</li>
-  </ul>
-
-  <h2>4. Use Cases</h2>
-
-  <div class="uc-block">
-    <h3>UC-1: 廣告暫停/關閉時嘗試使用邀約功能（詢問意願/邀約測評）</h3>
-    <table>
-      <tr><th>主要角色</th><td>企業 HR（廣告處於暫停或關閉狀態）</td></tr>
-      <tr><th>前置條件</th><td>企業廣告為暫停中或關閉中；履歷已進入甄試流程</td></tr>
-      <tr><th>後置條件（成功）</th><td>使用者點擊「開啟廣告」CTA，另開分頁前往對應頁面</td></tr>
-      <tr><th>後置條件（失敗）</th><td>使用者放棄操作，不進行任何流程推進</td></tr>
-    </table>
-    <h4>主要流程</h4>
-    <ol>
-      <li>用戶在看板/清單側邊卡片或履歷詳細頁點擊「邀約」按鈕</li>
-      <li>系統展開邀約選單，詢問意願、邀約測評顯示為 disabled 狀態</li>
-      <li>選單上方顯示提示文案：「廣告尚未開啟，開啟後即可使用完整功能」</li>
-      <li>使用者點擊 <strong>[開啟廣告]</strong> 按鈕</li>
-      <li>系統另開分頁導至對應頁面（依廣告狀態而定）</li>
-    </ol>
-    <h4>替代流程</h4>
-    <ul>
-      <li>4a. 廣告為「暫停中」→ 另開分頁至 <code>/rms/ad/status?isShowReOpenModal=1</code>，直接顯示「立即恢復刊登」圖層</li>
-      <li>4b. 廣告為「關閉中」→ 另開分頁至 <code>/rms/order/general/selectPlan</code></li>
-    </ul>
-    <h4>特殊情境</h4>
-    <p>若履歷卡片在「錄用階段」，邀約按鈕點擊後展開的選單中，詢問意願為 disabled，不顯示邀約測評</p>
-    <h4>流程圖</h4>
-    <pre class="mermaid">
-flowchart TD
-    A[用戶點擊邀約按鈕] --> B[展開邀約選單]
-    B --> C{履歷是否在錄用階段?}
-    C -->|否| D[顯示詢問意願/邀約測評, 均為 disabled]
-    C -->|是| E[顯示詢問意願 disabled, 不顯示邀約測評]
-    D --> F[上方顯示提示文案 + 開啟廣告按鈕]
-    E --> F
-    F --> G{用戶點擊開啟廣告}
-    G -->|廣告暫停中| H[另開分頁至 /rms/ad/status?isShowReOpenModal=1\n直接顯示立即恢復刊登圖層]
-    G -->|廣告關閉中| I[另開分頁至 /rms/order/general/selectPlan]
-    </pre>
-  </div>
-
-  <div class="uc-block">
-    <h3>UC-2: 廣告暫停/關閉時新增行程（邀約面試/到職日）</h3>
-    <table>
-      <tr><th>主要角色</th><td>企業 HR</td></tr>
-      <tr><th>前置條件</th><td>廣告為暫停中或關閉中；進行卡片拖曳、移動至、或行事曆新增行程</td></tr>
-      <tr><th>後置條件（成功）</th><td>行程成功新增，不發送 BC 溝通；使用者清楚知道求職者未收到通知</td></tr>
-      <tr><th>後置條件（失敗）</th><td>使用者中途放棄或選擇先開啟廣告</td></tr>
-    </table>
-    <h4>主要流程</h4>
-    <ol>
-      <li>用戶拖曳卡片或選擇「移動至」進入邀約流程 Step 1</li>
-      <li>Step 1 正常填寫行程資訊，按鈕為「新增」</li>
-      <li>進入 Step 2「通知求職者」</li>
-      <li>系統顯示：
-        <ul>
-          <li>上方提示文字：「廣告未開啟，不提供聯絡求職者」</li>
-          <li>通知求職者預設為「不通知求職者」且不可修改</li>
-          <li>下方提示文案：「廣告尚未開啟，開啟後即可通知求職者」</li>
-          <li>[開啟廣告] 按鈕</li>
-        </ul>
-      </li>
-      <li>用戶確認後進入 Step 3</li>
-      <li>Step 3 顯示通知求職者圖示 + 提示文字：「廣告未開啟，不提供聯絡求職者」</li>
-      <li>完成，系統新增行程但不發 BC 溝通</li>
-    </ol>
-    <h4>流程圖</h4>
-    <pre class="mermaid">
-flowchart TD
-    A[觸發新增行程\n卡片拖曳/移動至/行事曆] --> B[Step 1: 填寫行程資訊]
-    B --> C[Step 2: 通知求職者]
-    C --> D[顯示: 廣告未開啟，不提供聯絡求職者\n通知選項 locked = 不通知\n下方提示 + 開啟廣告按鈕]
-    D --> E{用戶選擇}
-    E -->|繼續| F[Step 3: 完成確認\n顯示不通知求職者圖示]
-    E -->|點擊開啟廣告| G{廣告狀態}
-    G -->|暫停中| H[另開分頁\n/rms/ad/status?isShowReOpenModal=1]
-    G -->|關閉中| I[另開分頁\n/rms/order/general/selectPlan]
-    F --> J[完成，行程新增，不發 BC 溝通]
-    </pre>
-  </div>
-
-  <div class="uc-block">
-    <h3>UC-3: 廣告暫停/關閉時修改行程</h3>
-    <table>
-      <tr><th>主要角色</th><td>企業 HR</td></tr>
-      <tr><th>前置條件</th><td>廣告為暫停中或關閉中；行程尚未過期</td></tr>
-      <tr><th>後置條件（成功）</th><td>行程成功修改，不發 BC 溝通；完成後顯示彈窗說明</td></tr>
-      <tr><th>後置條件（失敗）</th><td>用戶放棄修改或先去開啟廣告</td></tr>
-    </table>
-    <h4>主要流程</h4>
-    <ol>
-      <li>用戶點擊修改行程</li>
-      <li>系統在修改畫面新增提示文案：「由於廣告未開啟，本次異動將不會通知求職者」</li>
-      <li>頁面同時顯示 [開啟廣告] 按鈕</li>
-      <li>用戶完成修改後送出</li>
-      <li>系統彈出完成彈窗（非僅 toast）：
-        <ul>
-          <li>標題：「修改完成，但未通知求職者」</li>
-          <li>內文：「由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程異動。」</li>
-        </ul>
-      </li>
-      <li>行程修改完成，不發 BC 溝通</li>
-    </ol>
-    <h4>流程圖</h4>
-    <pre class="mermaid">
-flowchart TD
-    A[用戶點擊修改行程] --> B[進入修改頁面]
-    B --> C[顯示提示: 由於廣告未開啟，本次異動將不會通知求職者\n+ 開啟廣告按鈕]
-    C --> D{用戶行為}
-    D -->|繼續修改| E[填寫修改內容並送出]
-    D -->|點擊開啟廣告| F{廣告狀態}
-    F -->|暫停中| G[另開分頁\n/rms/ad/status?isShowReOpenModal=1]
-    F -->|關閉中| H[另開分頁\n/rms/order/general/selectPlan]
-    E --> I[完成彈窗\n標題: 修改完成，但未通知求職者\n內文: 說明不會通知求職者]
-    I --> J[結束，不發 BC 溝通]
-    </pre>
-  </div>
-
-  <div class="uc-block">
-    <h3>UC-4: 廣告暫停/關閉時刪除未過期行程 / 退回上一階段</h3>
-    <table>
-      <tr><th>主要角色</th><td>企業 HR</td></tr>
-      <tr><th>前置條件</th><td>廣告為暫停中或關閉中；行程尚未過期</td></tr>
-      <tr><th>後置條件（成功）</th><td>行程刪除或退回，不發 BC 溝通；用戶已看到醒目警示</td></tr>
-      <tr><th>後置條件（失敗）</th><td>用戶取消操作</td></tr>
-    </table>
-    <h4>主要流程</h4>
-    <ol>
-      <li>用戶點擊刪除未過期行程，或拖曳卡片/選擇「移動至」退回上一階段</li>
-      <li>系統彈出填寫原因的 pop-up</li>
-      <li>Pop-up 中新增醒目提示文案（加上醒目底色）：「由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。」</li>
-      <li>用戶確認操作</li>
-      <li>系統執行刪除/退回，不發 BC 溝通</li>
-    </ol>
-    <h4>流程圖</h4>
-    <pre class="mermaid">
-flowchart TD
-    A[用戶點擊刪除行程\n或退回上一階段] --> B[彈出填寫原因 Pop-up]
-    B --> C[顯示醒目提示文案\n廣告未開啟，不會通知求職者\n文字加上醒目底色]
-    C --> D{用戶決定}
-    D -->|確認| E[執行刪除/退回\n不發 BC 溝通]
-    D -->|取消| F[關閉 Pop-up，不執行操作]
-    </pre>
-  </div>
-
-  <div class="uc-block">
-    <h3>UC-5: 廣告暫停/關閉時取消錄用</h3>
-    <table>
-      <tr><th>主要角色</th><td>企業 HR</td></tr>
-      <tr><th>前置條件</th><td>廣告為暫停中或關閉中；到職日尚未過期</td></tr>
-      <tr><th>後置條件（成功）</th><td>取消錄用成功，不發 BC 溝通；用戶已看到醒目警示</td></tr>
-      <tr><th>後置條件（失敗）</th><td>用戶取消操作</td></tr>
-    </table>
-    <h4>主要流程</h4>
-    <ol>
-      <li>用戶在看板或錄用狀態頁（<code>/rms/ats/hiring/status?jobNo={}</code>）操作取消錄用</li>
-      <li>系統判斷到職日是否過期</li>
-      <li>若未過期：彈出確認 pop-up，顯示醒目提示文案（醒目底色）</li>
-      <li>用戶確認取消錄用</li>
-      <li>系統完成取消錄用，不發 BC 溝通</li>
-    </ol>
-    <h4>流程圖</h4>
-    <pre class="mermaid">
-flowchart TD
-    A[用戶選擇取消錄用\n看板或錄用狀態頁] --> B[判斷到職日是否過期]
-    B -->|已過期| C[直接完成取消錄用，不發 BC 溝通]
-    B -->|未過期| D[彈出確認 Pop-up\n顯示醒目提示文案]
-    D --> E{用戶決定}
-    E -->|確認| F[完成取消錄用\n不發 BC 溝通]
-    E -->|取消| G[關閉 Pop-up，維持錄用狀態]
-    </pre>
-  </div>
-
-  <h2>5. 影響範圍</h2>
+  <!-- Section 1 -->
+  <h2>1. 影響範圍</h2>
 
   <h3>受影響的角色</h3>
   <table>
-    <tr><th>角色</th><th>影響方式</th></tr>
-    <tr><td>企業 HR（廣告暫停中）</td><td>UI 操作行為改變，邀約相關功能從隱藏改為 disabled + CTA</td></tr>
-    <tr><td>企業 HR（廣告關閉中）</td><td>同上</td></tr>
-    <tr><td>求職者</td><td>不受直接影響，但更能確保 HR 已知通知未發送</td></tr>
+    <thead><tr><th>角色</th><th>影響方式</th></tr></thead>
+    <tbody>
+      <tr><td>ATS 企業用戶（廣告<strong>暫停中</strong>）</td><td>邀約相關按鈕由「不顯示」改為 disable＋開啟廣告 CTA；行程操作彈窗新增醒目提示文案</td></tr>
+      <tr><td>ATS 企業用戶（廣告<strong>關閉中</strong>）</td><td>同上，開啟廣告 CTA 改導向購買頁</td></tr>
+      <tr><td>ATS 企業用戶（廣告<strong>刊登中</strong>）</td><td>不受影響，維持正常使用</td></tr>
+      <tr><td>求職者</td><td>不直接影響；廣告暫停/關閉期間不會收到 BC 溝通通知</td></tr>
+    </tbody>
   </table>
 
   <h3>受影響的頁面 / 功能</h3>
   <table>
-    <tr><th>頁面名稱</th><th>頁面路徑</th><th>異動類型</th></tr>
-    <tr><td>甄試履歷看板</td><td>/rms/ats (看板視圖)</td><td>修改</td></tr>
-    <tr><td>甄試履歷清單</td><td>/rms/ats (清單視圖)</td><td>修改</td></tr>
-    <tr><td>甄試履歷側邊卡片</td><td>看板/清單右側滑出卡片</td><td>修改</td></tr>
-    <tr><td>甄試履歷詳細頁</td><td>/rms/ats/resume/{id}</td><td>修改</td></tr>
-    <tr><td>邀約圖層 (三步驟)</td><td>邀約 Modal</td><td>修改</td></tr>
-    <tr><td>行事曆</td><td>/rms/ats/calendar</td><td>修改</td></tr>
-    <tr><td>錄用狀態頁</td><td>/rms/ats/hiring/status?jobNo={}</td><td>修改</td></tr>
+    <thead><tr><th>頁面名稱</th><th>頁面路徑</th><th>異動類型</th></tr></thead>
+    <tbody>
+      <tr><td>ATS 甄試履歷看板（側邊資訊欄）</td><td><code>/rms/ats/...</code></td><td>修改</td></tr>
+      <tr><td>ATS 甄試履歷清單（側邊資訊欄）</td><td><code>/rms/ats/...</code></td><td>修改</td></tr>
+      <tr><td>ATS 甄試履歷詳細頁</td><td><code>/rms/ats/...</code></td><td>修改</td></tr>
+      <tr><td>新增行程 Step 2（通知求職者步驟）</td><td><code>/rms/ats/...</code></td><td>修改（從跳過 Step 2 改為顯示且鎖定）</td></tr>
+      <tr><td>修改行程完成提示</td><td><code>/rms/ats/...</code></td><td>修改（Toast → Modal）</td></tr>
+      <tr><td>刪除未過期行程確認 pop-up</td><td><code>/rms/ats/...</code></td><td>修改（新增醒目提示文案）</td></tr>
+      <tr><td>退回上一階段確認 pop-up</td><td><code>/rms/ats/...</code></td><td>修改（新增醒目提示文案）</td></tr>
+      <tr><td>取消錄用確認 pop-up</td><td><code>/rms/ats/hiring/status?jobNo={}</code></td><td>修改（新增醒目提示文案＋CTA）</td></tr>
+    </tbody>
   </table>
 
   <h3>這次不改</h3>
   <table>
-    <tr><th>不改的項目</th><th>原因</th></tr>
-    <tr><td>無聯絡權限帳號的邀約行為</td><td>無聯絡權限維持原規則，不能刪除/不能移動卡片</td></tr>
-    <tr><td>行事曆新增面試/到職時半顯問題</td><td>已知問題，維持現況（行事曆輸入 idno 抓取履歷順序維持主應&gt;甄試&gt;線上&gt;儲存）</td></tr>
-    <tr><td>感謝函按鈕</td><td>感謝函 disable 邏輯維持原有設計（hover 顯示「刊登中會員專屬」）</td></tr>
-    <tr><td>已過期行程的刪除</td><td>不涉及 BC 溝通，可正常使用無需調整</td></tr>
+    <thead><tr><th>不改的項目</th><th>原因</th></tr></thead>
+    <tbody>
+      <tr><td>邀約面試 / 到職日提醒按鈕</td><td>可用，但不發 BC 溝通（現況已如此）</td></tr>
+      <tr><td>面試紀錄 / 錄用狀態 / 轉寄 / 轉推薦 / 列印 / 備註 / 聊聊</td><td>不涉及 BC 溝通，正常使用</td></tr>
+      <tr><td>感謝函的 disable 行為</td><td>維持 disable + hover 顯示「刊登中會員專屬」，不加 CTA</td></tr>
+      <tr><td>行事曆新增時的履歷抓取順序（主應&gt;甄試&gt;線上&gt;儲存）</td><td>維持現況，不異動</td></tr>
+      <tr><td>刪除整張履歷卡</td><td>正常可刪，不受廣告狀態影響</td></tr>
+    </tbody>
   </table>
 
-  <h2>6. 權限設計</h2>
-  <p>本次需求涉及廣告狀態（暫停中/關閉中）的條件判斷，但不涉及角色權限變更。</p>
+  <!-- Section 3 -->
+  <h2>3. 文案 / 版面異動</h2>
 
-  <h3>廣告狀態判斷矩陣</h3>
+  <h3>邀約按鈕區域（看板/清單 側邊資訊 &amp; 甄試詳細頁）</h3>
   <table>
-    <tr>
-      <th>廣告狀態</th>
-      <th>邀約（詢問意願/測評）</th>
-      <th>新增行程（BC 通知）</th>
-      <th>修改行程</th>
-      <th>刪除未過期行程</th>
-      <th>退回上一階段</th>
-      <th>取消錄用</th>
-    </tr>
-    <tr>
-      <td>刊登中（正常）</td>
-      <td>✅ 可使用</td>
-      <td>✅ 可通知</td>
-      <td>✅ 可通知</td>
-      <td>✅ 可通知</td>
-      <td>✅ 可通知</td>
-      <td>✅ 可通知</td>
-    </tr>
-    <tr>
-      <td>暫停中</td>
-      <td>disabled + CTA</td>
-      <td>可新增，不通知（鎖定選項）</td>
-      <td>可修改，不通知</td>
-      <td>可刪除，不通知（醒目提示）</td>
-      <td>可退回，不通知（醒目提示）</td>
-      <td>可取消，不通知（醒目提示）</td>
-    </tr>
-    <tr>
-      <td>關閉中</td>
-      <td>disabled + CTA</td>
-      <td>可新增，不通知（鎖定選項）</td>
-      <td>可修改，不通知</td>
-      <td>可刪除，不通知（醒目提示）</td>
-      <td>可退回，不通知（醒目提示）</td>
-      <td>可取消，不通知（醒目提示）</td>
-    </tr>
-    <tr>
-      <td>無聯絡權限</td>
-      <td>維持原規則（不能刪除/移動）</td>
-      <td>—</td>
-      <td>—</td>
-      <td>不可刪除</td>
-      <td>不可退回</td>
-      <td>—</td>
-    </tr>
+    <thead><tr><th>區域</th><th>現行內容</th><th>改為</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>詢問意願 按鈕</td><td>不顯示</td><td>顯示但 disable（不可點擊）</td><td>廣告暫停/關閉時</td></tr>
+      <tr><td>邀約測評 按鈕</td><td>不顯示</td><td>顯示但 disable（不可點擊）</td><td>廣告暫停/關閉時</td></tr>
+      <tr><td>邀約按鈕區域（卡片在<strong>錄用階段</strong>）</td><td>邀約按鈕整體 disable</td><td>邀約按鈕可點，展開後詢問意願 disable</td><td>廣告暫停/關閉時</td></tr>
+      <tr><td>新增提示文案</td><td>無</td><td>廣告尚未開啟，開啟後即可使用完整功能</td><td>邀約按鈕區塊上方 banner</td></tr>
+      <tr><td>新增 CTA 按鈕</td><td>無</td><td><code>[開啟廣告]</code></td><td>另開分頁，依廣告狀態導向不同頁面</td></tr>
+    </tbody>
   </table>
 
-  <h3>後端阻擋</h3>
+  <h3>新增行程 Step 2（通知求職者步驟）</h3>
   <table>
-    <tr><th>操作</th><th>後端阻擋規則</th></tr>
-    <tr><td>BC 溝通發送</td><td>廣告 Pause/Off 狀態下，後端阻擋所有 BC 溝通發送請求（防止前端繞過）</td></tr>
+    <thead><tr><th>區域</th><th>現行內容</th><th>改為</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>Step 2 整體</td><td>跳過（直接預設不通知）</td><td>回歸顯示 Step 2</td><td>廣告暫停/關閉時</td></tr>
+      <tr><td>上方提示文案</td><td>無</td><td>廣告未開啟，不提供聯絡求職者</td><td>Step 2 頂部 banner</td></tr>
+      <tr><td>通知求職者選項</td><td>—</td><td>預設「不通知求職者」且<strong>鎖定不可修改</strong></td><td></td></tr>
+      <tr><td>下方提示文案</td><td>無</td><td>廣告尚未開啟，開啟後即可通知求職者</td><td></td></tr>
+      <tr><td>新增 CTA 按鈕</td><td>無</td><td><code>[開啟廣告]</code></td><td>另開分頁</td></tr>
+      <tr><td>Step 3 完成畫面</td><td>正常完成提示</td><td>顯示通知求職者圖示＋「廣告未開啟，不提供聯絡求職者」</td><td></td></tr>
+    </tbody>
   </table>
 
-  <h2>7. 規格</h2>
-
-  <h3>邀約按鈕狀態與提示</h3>
-  <p><strong>適用位置</strong>：甄試履歷看板側邊卡片、清單側邊卡片、甄試履歷詳細頁</p>
+  <h3>修改行程 操作畫面（廣告未開啟時）</h3>
   <table>
-    <tr><th>元件</th><th>廣告刊登中</th><th>廣告暫停/關閉中</th></tr>
-    <tr><td>邀約按鈕（主按鈕）</td><td>可點擊，展開選單</td><td>可點擊，展開選單</td></tr>
-    <tr><td>詢問意願</td><td>可使用</td><td>disabled 不可使用</td></tr>
-    <tr><td>邀約測評</td><td>可使用</td><td>disabled 不可使用</td></tr>
-    <tr><td>提示文案</td><td>不顯示</td><td>「廣告尚未開啟，開啟後即可使用完整功能」</td></tr>
-    <tr><td>[開啟廣告] 按鈕</td><td>不顯示</td><td>顯示（行為依廣告狀態）</td></tr>
+    <thead><tr><th>區域</th><th>現行內容</th><th>改為</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>操作中提示文案</td><td>無</td><td>由於廣告未開啟，本次異動將不會通知求職者</td><td><strong>醒目底色</strong>顯示</td></tr>
+      <tr><td>新增 CTA 按鈕</td><td>無</td><td><code>[開啟廣告]</code></td><td>另開分頁</td></tr>
+    </tbody>
   </table>
 
-  <p><strong>[開啟廣告] 按鈕行為</strong>：</p>
+  <h3>修改行程 完成提示</h3>
   <table>
-    <tr><th>廣告狀態</th><th>行為</th></tr>
-    <tr><td>暫停中</td><td>另開分頁至 <code>/rms/ad/status?isShowReOpenModal=1</code>，直接顯示「立即恢復刊登」圖層</td></tr>
-    <tr><td>關閉中</td><td>另開分頁至 <code>/rms/order/general/selectPlan</code></td></tr>
+    <thead><tr><th>區域</th><th>現行內容</th><th>改為</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>完成提示形式</td><td>Toast 訊息</td><td>Modal 彈窗</td><td>廣告暫停/關閉時</td></tr>
+      <tr><td>Modal 標題</td><td>—</td><td>修改完成，但未通知求職者</td><td></td></tr>
+      <tr><td>Modal 內文</td><td>—</td><td>由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程異動。</td><td></td></tr>
+    </tbody>
   </table>
 
-  <div class="warning">⚠️ 錄用階段特殊規則：若履歷卡片已在「錄用階段」，點擊邀約按鈕後展開選單 → 詢問意願：disabled；邀約測評：不顯示</div>
-
-  <hr>
-
-  <h3>邀約三步驟圖層（新增行程）</h3>
-  <p><strong>Step 2 — 通知求職者（廣告暫停/關閉時）</strong>：</p>
+  <h3>刪除未過期行程 確認 pop-up</h3>
   <table>
-    <tr><th>元素</th><th>內容</th></tr>
-    <tr><td>上方提示文字</td><td>「廣告未開啟，不提供聯絡求職者」</td></tr>
-    <tr><td>通知求職者選項</td><td>預設為「不通知求職者」，且 disabled（不可修改）</td></tr>
-    <tr><td>下方提示文案</td><td>「廣告尚未開啟，開啟後即可通知求職者」</td></tr>
-    <tr><td>[開啟廣告] 按鈕</td><td>行為依廣告狀態（同上）</td></tr>
+    <thead><tr><th>區域</th><th>現行內容</th><th>改為</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>提示文案</td><td>無</td><td>由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。</td><td><strong>醒目底色</strong>（2026/04/27 版）</td></tr>
+    </tbody>
   </table>
-  <p><strong>Step 3 — 完成確認</strong>：</p>
+
+  <h3>退回上一階段 確認 pop-up（拖曳 / 移動至）</h3>
   <table>
-    <tr><th>元素</th><th>內容</th></tr>
-    <tr><td>通知求職者圖示</td><td>顯示「未通知」圖示</td></tr>
-    <tr><td>提示文字</td><td>「廣告未開啟，不提供聯絡求職者」</td></tr>
+    <thead><tr><th>區域</th><th>現行內容</th><th>改為</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>提示文案</td><td>無</td><td>由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。</td><td><strong>醒目底色</strong>（2026/04/27 版）</td></tr>
+    </tbody>
   </table>
 
-  <hr>
-
-  <h3>修改行程提示</h3>
-  <p><strong>修改畫面新增</strong>：</p>
+  <h3>取消錄用 確認 pop-up（到職日未過期）</h3>
   <table>
-    <tr><th>元素</th><th>內容</th></tr>
-    <tr><td>提示文案</td><td>「由於廣告未開啟，本次異動將不會通知求職者」</td></tr>
-    <tr><td>[開啟廣告] 按鈕</td><td>行為依廣告狀態（同上）</td></tr>
+    <thead><tr><th>區域</th><th>現行內容</th><th>改為</th><th>備註</th></tr></thead>
+    <tbody>
+      <tr><td>提示文案</td><td>無</td><td>由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。</td><td><strong>醒目底色</strong></td></tr>
+      <tr><td>新增 CTA 按鈕</td><td>無</td><td><code>[開啟廣告]</code></td><td>另開分頁，依廣告狀態導向不同頁面</td></tr>
+    </tbody>
   </table>
-  <p><strong>完成後彈窗</strong>（取代原有的 toast）：</p>
+
+  <!-- Section 4 -->
+  <h2>4. 操作流程</h2>
+
+  <h3>流程一：點擊詢問意願 / 邀約測評（廣告暫停/關閉時）</h3>
+  <p><strong>現行流程：</strong>廣告暫停/關閉 → 詢問意願/邀約測評按鈕<strong>不顯示</strong>，用戶無法知道功能存在，誤以為系統異常。</p>
+  <p><strong>調整後流程：</strong>按鈕顯示但 disable，按鈕區域上方顯示提示 banner，提供 <code>[開啟廣告]</code> CTA 另開分頁。</p>
+  <pre class="mermaid">
+flowchart TD
+    A[用戶進入 ATS 甄試履歷頁面] --> B{廣告狀態}
+    B -->|刊登中| C[詢問意願/邀約測評 正常可用]
+    B -->|暫停中 或 關閉中| D[詢問意願/邀約測評 顯示但 disable]
+    D --> E[上方 banner：廣告尚未開啟，開啟後即可使用完整功能]
+    E --> F{用戶點擊 開啟廣告}
+    F -->|暫停中| G["另開新分頁\n/rms/ad/status?isShowReOpenModal=1\n直接顯示立即恢復刊登圖層"]
+    F -->|關閉中| H["另開新分頁\n/rms/order/general/selectPlan"]
+  </pre>
+
+  <h3>流程二：新增行程（三步驟圖層，廣告暫停/關閉時）</h3>
+  <p><strong>現行流程：</strong>Step 2 被跳過，直接預設「不通知求職者」。</p>
+  <p><strong>調整後流程（2026/04/27）：</strong>Step 2 回歸顯示，但通知求職者選項鎖定為「不通知」且不可修改；上方 banner 說明廣告未開啟；下方提示＋<code>[開啟廣告]</code> CTA。</p>
+  <pre class="mermaid">
+flowchart TD
+    A["用戶觸發邀約動作\n(拖曳/移動至/行事曆新增)"] --> B{廣告狀態}
+    B -->|刊登中| C[Step 1 → Step 2 正常流程 → Step 3]
+    B -->|暫停中 或 關閉中| D["Step 1：填寫行程資訊\naction btn: 新增"]
+    D --> E["Step 2：回歸顯示但鎖定\n頂部 banner: 廣告未開啟不提供聯絡\n通知求職者=不通知且鎖定\n下方提示+開啟廣告CTA"]
+    E --> F{用戶選擇}
+    F -->|點擊開啟廣告| G[另開分頁處理廣告]
+    F -->|繼續完成| H["Step 3：完成\n顯示通知圖示+廣告未開啟提示"]
+  </pre>
+
+  <h3>流程三：修改行程（廣告暫停/關閉時）</h3>
+  <pre class="mermaid">
+flowchart TD
+    A[用戶點擊修改行程] --> B{廣告狀態}
+    B -->|刊登中| C[正常修改流程 → Toast 完成提示]
+    B -->|暫停中 或 關閉中| D["修改畫面內顯示醒目提示\n本次異動不會通知求職者＋開啟廣告CTA"]
+    D --> E[用戶完成修改送出]
+    E --> F["Modal 彈窗\n標題: 修改完成，但未通知求職者\n內文: 本次異動不會通知求職者"]
+    F --> G[用戶點擊確認關閉]
+  </pre>
+
+  <h3>流程四：刪除 / 退回未過期行程（廣告暫停/關閉時）</h3>
+  <pre class="mermaid">
+flowchart TD
+    A["用戶操作刪除行程\n或退回/移動至"] --> B{行程是否過期}
+    B -->|已過期| C[正常操作，無需提示]
+    B -->|未過期| D{廣告狀態}
+    D -->|刊登中| E[正常流程，發 BC 溝通]
+    D -->|暫停中 或 關閉中| F["確認 pop-up 內\n新增醒目底色提示\n本次異動不會通知求職者"]
+    F --> G[用戶確認]
+    G --> H[執行操作，不發 BC 溝通]
+  </pre>
+
+  <h3>流程五：取消錄用（到職日未過期，廣告暫停/關閉時）</h3>
+  <pre class="mermaid">
+flowchart TD
+    A[用戶操作取消錄用] --> B{到職日是否過期}
+    B -->|已過期| C[正常取消，無需提示]
+    B -->|未過期| D{廣告狀態}
+    D -->|刊登中| E[正常流程，發 BC 溝通]
+    D -->|暫停中 或 關閉中| F["pop-up 新增醒目提示\n＋開啟廣告CTA"]
+    F --> G[用戶確認]
+    G --> H[執行取消，不發 BC 溝通]
+  </pre>
+
+  <!-- Section 5 -->
+  <h2>5. 提示與文案</h2>
+
+  <h4>邀約按鈕區域提示 Banner</h4>
   <table>
-    <tr><th>元素</th><th>內容</th></tr>
-    <tr><td>標題</td><td>「修改完成，但未通知求職者」</td></tr>
-    <tr><td>內文</td><td>「由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程異動。」</td></tr>
+    <thead><tr><th>屬性</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>文案</td><td>廣告尚未開啟，開啟後即可使用完整功能</td></tr>
+      <tr><td>CTA 按鈕文字</td><td>開啟廣告</td></tr>
+      <tr><td>按鈕行為</td><td>另開新分頁（暫停中→恢復刊登頁；關閉中→購買頁）</td></tr>
+      <tr><td>觸發時機</td><td>廣告暫停中 或 關閉中，進入含邀約按鈕的頁面</td></tr>
+      <tr><td>顯示位置</td><td>邀約按鈕區塊上方</td></tr>
+      <tr><td>可否關閉</td><td>不可關閉（常態顯示）</td></tr>
+    </tbody>
   </table>
 
-  <hr>
-
-  <h3>刪除未過期行程 / 退回上一階段 / 取消錄用 Pop-up 提示</h3>
+  <h4>Step 2 通知求職者 - 頂部 Banner</h4>
   <table>
-    <tr><th>元素</th><th>內容</th></tr>
-    <tr><td>提示文案</td><td>「由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。」</td></tr>
-    <tr><td>文字樣式</td><td>加上醒目底色（highlight）</td></tr>
-    <tr><td>位置</td><td>填寫原因 Pop-up 內</td></tr>
+    <thead><tr><th>屬性</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>文案</td><td>廣告未開啟，不提供聯絡求職者</td></tr>
+      <tr><td>顯示位置</td><td>Step 2 頁面頂部</td></tr>
+      <tr><td>觸發時機</td><td>廣告暫停中 或 關閉中</td></tr>
+      <tr><td>可否關閉</td><td>不可關閉</td></tr>
+    </tbody>
   </table>
 
-  <h2>8. 錯誤處理</h2>
-
-  <h3>頁面層級錯誤</h3>
+  <h4>Step 2 通知求職者 - 底部提示</h4>
   <table>
-    <tr><th>錯誤情境</th><th>用戶看到什麼</th><th>用戶可以做什麼</th></tr>
-    <tr><td>[開啟廣告] 導向頁面載入失敗</td><td class="warning">⚠️ Jira 未提及，建議與 PM 確認</td><td>—</td></tr>
+    <thead><tr><th>屬性</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>文案</td><td>廣告尚未開啟，開啟後即可通知求職者</td></tr>
+      <tr><td>CTA 按鈕文字</td><td>開啟廣告</td></tr>
+      <tr><td>按鈕行為</td><td>另開新分頁（依廣告狀態）</td></tr>
+      <tr><td>顯示位置</td><td>Step 2 通知求職者選項下方</td></tr>
+    </tbody>
   </table>
+
+  <h4>修改行程操作畫面提示</h4>
+  <table>
+    <thead><tr><th>屬性</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>文案</td><td>由於廣告未開啟，本次異動將不會通知求職者</td></tr>
+      <tr><td>樣式</td><td>醒目底色（highlight background）</td></tr>
+      <tr><td>CTA 按鈕文字</td><td>開啟廣告</td></tr>
+      <tr><td>按鈕行為</td><td>另開新分頁</td></tr>
+      <tr><td>觸發時機</td><td>廣告暫停/關閉時進入修改行程畫面</td></tr>
+    </tbody>
+  </table>
+
+  <h4>修改行程完成 Modal</h4>
+  <table>
+    <thead><tr><th>屬性</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>標題</td><td>修改完成，但未通知求職者</td></tr>
+      <tr><td>內文</td><td>由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程異動。</td></tr>
+      <tr><td>主要按鈕</td><td>確認 → 關閉 Modal</td></tr>
+      <tr><td>次要按鈕</td><td><div class="warning">⚠️ Jira 未提及，建議確認是否加上「開啟廣告」CTA</div></td></tr>
+      <tr><td>觸發時機</td><td>廣告暫停/關閉時，用戶完成修改行程送出後</td></tr>
+      <tr><td>可否關閉</td><td>點確認按鈕關閉</td></tr>
+      <tr><td>顯示頻率</td><td>每次操作都顯示</td></tr>
+    </tbody>
+  </table>
+
+  <h4>刪除/退回未過期行程 確認 pop-up 提示文案</h4>
+  <table>
+    <thead><tr><th>屬性</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>文案</td><td>由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。</td></tr>
+      <tr><td>樣式</td><td>醒目底色（2026/04/27 版）</td></tr>
+      <tr><td>顯示位置</td><td>確認 pop-up 填寫原因區域附近</td></tr>
+    </tbody>
+  </table>
+
+  <h4>取消錄用確認 pop-up（到職日未過期）</h4>
+  <table>
+    <thead><tr><th>屬性</th><th>內容</th></tr></thead>
+    <tbody>
+      <tr><td>文案</td><td>由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。</td></tr>
+      <tr><td>樣式</td><td>醒目底色</td></tr>
+      <tr><td>CTA 按鈕文字</td><td>開啟廣告</td></tr>
+      <tr><td>按鈕行為</td><td>另開新分頁（依廣告狀態）</td></tr>
+      <tr><td>觸發時機</td><td>廣告暫停/關閉時，取消錄用且到職日未過期</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 6 -->
+  <h2>6. 商業規則</h2>
+
+  <h3>廣告狀態對應行為總表</h3>
+  <table>
+    <thead><tr><th>廣告狀態</th><th>詢問意願/邀約測評</th><th>邀約 Step 2</th><th>行程操作 BC 溝通</th><th><code>[開啟廣告]</code> 目標頁</th></tr></thead>
+    <tbody>
+      <tr><td>刊登中</td><td>正常可用</td><td>正常（可選通知）</td><td>正常發送</td><td>—</td></tr>
+      <tr><td>暫停中（Pause）</td><td>disable + 提示 banner</td><td>顯示但鎖定「不通知」</td><td>不發送</td><td><code>/rms/ad/status?isShowReOpenModal=1</code></td></tr>
+      <tr><td>關閉中（Off）</td><td>disable + 提示 banner</td><td>顯示但鎖定「不通知」</td><td>不發送</td><td><code>/rms/order/general/selectPlan</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3><code>[開啟廣告]</code> CTA 行為規格</h3>
+  <table>
+    <thead><tr><th>廣告狀態</th><th>開啟方式</th><th>目標 URL</th><th>目標頁特殊行為</th></tr></thead>
+    <tbody>
+      <tr><td>暫停中</td><td><code>target="_blank"</code> 另開分頁</td><td><code>/rms/ad/status?isShowReOpenModal=1</code></td><td><strong>直接顯示</strong>「立即恢復刊登」圖層</td></tr>
+      <tr><td>關閉中</td><td><code>target="_blank"</code> 另開分頁</td><td><code>/rms/order/general/selectPlan</code></td><td>正常購買頁</td></tr>
+    </tbody>
+  </table>
+
+  <h3>各操作 BC 溝通判斷矩陣</h3>
+  <table>
+    <thead><tr><th>操作類型</th><th>刊登中</th><th>暫停/關閉中</th></tr></thead>
+    <tbody>
+      <tr><td>邀約（新增行程）</td><td>依用戶選擇</td><td>強制不通知，不發 BC</td></tr>
+      <tr><td>修改行程日期</td><td>依用戶選擇</td><td>允許修改，不發 BC，完成後 Modal 提示</td></tr>
+      <tr><td>刪除未過期行程</td><td>發 BC</td><td>允許刪除，不發 BC，pop-up 有醒目警示</td></tr>
+      <tr><td>退回/移動至（未過期行程）</td><td>發 BC</td><td>允許操作，不發 BC，pop-up 有醒目警示</td></tr>
+      <tr><td>取消錄用（到職日未過期）</td><td>發 BC</td><td>允許取消，不發 BC，pop-up 有醒目警示＋CTA</td></tr>
+      <tr><td>刪除已過期行程</td><td>不發 BC</td><td>正常操作，無需特殊提示</td></tr>
+      <tr><td>修改面試資訊（非日期類）</td><td colspan="2"><div class="warning">⚠️ Jira 未提及，建議與 PM 確認是否需要提示</div></td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 15 -->
+  <h2>15. 錯誤處理</h2>
 
   <h3>操作層級錯誤</h3>
   <table>
-    <tr><th>操作</th><th>錯誤情境</th><th>錯誤提示（文案）</th><th>提示方式</th><th>用戶可以做什麼</th></tr>
-    <tr><td>新增/修改行程</td><td>後端阻擋 BC 溝通失敗</td><td class="warning">⚠️ Jira 未提及，建議與 PM 確認</td><td>—</td><td>—</td></tr>
-    <tr><td>刪除行程</td><td>API 失敗</td><td class="warning">⚠️ Jira 未提及，建議與 PM 確認</td><td>—</td><td>—</td></tr>
+    <thead><tr><th>操作</th><th>錯誤情境</th><th>錯誤提示（文案）</th><th>提示方式</th><th>用戶可以做什麼</th></tr></thead>
+    <tbody>
+      <tr><td>點擊 <code>[開啟廣告]</code></td><td>被瀏覽器 popup blocker 阻擋</td><td><div class="warning">⚠️ 未定義</div></td><td><div class="warning">⚠️ 未定義</div></td><td><div class="warning">⚠️ 未定義</div></td></tr>
+      <tr><td>修改行程送出</td><td>API 回應 5xx</td><td>系統忙碌中，請稍後再試</td><td>Toast</td><td>重試</td></tr>
+      <tr><td>刪除行程送出</td><td>API 回應 5xx</td><td>系統忙碌中，請稍後再試</td><td>Toast</td><td>重試</td></tr>
+      <tr><td>取消錄用送出</td><td>API 回應 5xx</td><td>系統忙碌中，請稍後再試</td><td>Toast</td><td>重試</td></tr>
+      <tr><td>任何操作途中</td><td>登入過期</td><td>登入已過期，請重新登入</td><td>Modal（不可關閉）</td><td>重新登入後回原頁面</td></tr>
+      <tr><td>任何操作途中</td><td>網路斷線</td><td>網路連線中斷，請檢查網路設定</td><td>Banner（頂部）</td><td>恢復網路後重試</td></tr>
+    </tbody>
   </table>
 
-  <h2>9. 例外情境</h2>
+  <!-- Section 16 -->
+  <h2>16. 例外情境</h2>
   <table>
-    <tr><th>#</th><th>情境分類</th><th>情境描述</th><th>預期行為</th></tr>
-    <tr><td>1</td><td>狀態切換</td><td>用戶在操作過程中，廣告從暫停切換為關閉（或反之）</td><td><div class="warning">⚠️ Jira 未提及，建議確認是否需即時更新 CTA 目標連結</div></td></tr>
-    <tr><td>2</td><td>錄用階段邀約</td><td>履歷已在錄用階段時，邀約按鈕展開後僅剩 disabled 的詢問意願</td><td>選單內僅顯示 disabled 詢問意願，不顯示邀約測評</td></tr>
-    <tr><td>3</td><td>行事曆操作</td><td>從行事曆新增面試/到職，與看板/清單邏輯相同</td><td>Step 2 鎖定「不通知求職者」，顯示 CTA</td></tr>
-    <tr><td>4</td><td>已過期行程刪除</td><td>廣告暫停/關閉時，刪除已過期行程</td><td>不涉及 BC 溝通，正常使用無需提示</td></tr>
-    <tr><td>5</td><td>無聯絡權限帳號</td><td>同時存在「無聯絡權限」與「廣告暫停」狀態</td><td>依照無聯絡權限規則優先處理（不能刪除/退回），不套用此次規格</td></tr>
-    <tr><td>6</td><td>到職日已過期取消錄用</td><td>廣告暫停/關閉時，取消錄用但到職日已過期</td><td>直接完成取消錄用，不顯示提示彈窗，不發 BC 溝通</td></tr>
-    <tr><td>7</td><td>多視窗操作</td><td>用戶在新分頁開啟廣告後，返回原頁面繼續操作</td><td><div class="warning">⚠️ Jira 未提及，建議確認是否需偵測廣告狀態更新</div></td></tr>
+    <thead><tr><th>#</th><th>情境分類</th><th>情境描述</th><th>建議預期行為</th><th>狀態</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>廣告狀態</td><td>用戶操作途中廣告狀態從「刊登中」即時變為「暫停中」</td><td>頁面是否需感知並更新 UI？</td><td><div class="warning">⚠️ 未定義</div></td></tr>
+      <tr><td>2</td><td>廣告狀態</td><td>用戶在另一分頁恢復廣告後，返回原分頁</td><td>頁面偵測廣告已恢復，解除 disable 並隱藏提示 banner</td><td>🤖 AI 建議，待 PO 確認</td></tr>
+      <tr><td>3</td><td>廣告狀態</td><td>廣告「暫停中」自動過期轉為「關閉中」，用戶正在操作修改行程</td><td><code>[開啟廣告]</code> 的目標 URL 是否即時切換？</td><td><div class="warning">⚠️ 未定義</div></td></tr>
+      <tr><td>4</td><td>操作類</td><td>用戶連續快速點擊 <code>[開啟廣告]</code> 按鈕</td><td>防止重複開啟多個分頁（debounce 或 clicked 後短暫 disable）</td><td>🤖 AI 建議，待 PO 確認</td></tr>
+      <tr><td>5</td><td>操作類</td><td>在 Step 2 點擊開啟廣告，新分頁恢復廣告後返回原 Step 2</td><td>不自動解鎖，需關閉 modal 重新觸發流程</td><td>🤖 AI 建議，待 PO 確認</td></tr>
+      <tr><td>6</td><td>操作類</td><td>用戶在修改行程畫面填到一半離開頁面</td><td>是否有暫存機制？</td><td><div class="warning">⚠️ 未定義</div></td></tr>
+      <tr><td>7</td><td>網路類</td><td>送出刪除/修改行程時網路斷線</td><td>保留操作狀態，顯示重試提示</td><td>🤖 AI 建議，待 PO 確認</td></tr>
+      <tr><td>8</td><td>資料類</td><td>另一用戶同時移動同一張履歷卡</td><td>先到先得？衝突提示？</td><td><div class="warning">⚠️ 未定義</div></td></tr>
+      <tr><td>9</td><td>資料類</td><td>BC 通知排隊中，廣告突然暫停</td><td>是否需取消已排隊的 BC 通知？</td><td><div class="warning">⚠️ 未定義</div></td></tr>
+      <tr><td>10</td><td>裝置類</td><td>BAPP（行動版）是否同步此次調整？</td><td>Axure 有獨立 BAPP 規格（甄試履歷Bapp），需確認是否另立 ticket</td><td><div class="warning">⚠️ 未定義</div></td></tr>
+      <tr><td>11</td><td>裝置類</td><td>瀏覽器阻擋新分頁 popup</td><td>顯示提示：請允許此頁面開啟新分頁</td><td>🤖 AI 建議，待 PO 確認</td></tr>
+      <tr><td>12</td><td>操作類</td><td>看板拖曳 / 清單 / 右側卡片 / 行事曆四個動線交叉驗收</td><td>所有動線需涵蓋相同的提示與限制邏輯（Axure 驗收提醒）</td><td>⚠️ 驗收注意事項</td></tr>
+    </tbody>
   </table>
 
-  <h2>10. 驗收標準</h2>
+  <!-- PO Section -->
+  <div class="po-section">
+    <h2>📋 PO 補問清單（AI 產出）</h2>
 
-  <h3>UC-1 邀約按鈕相關</h3>
-  <ul>
-    <li><input type="checkbox" disabled> 廣告暫停/關閉時，點擊邀約按鈕，詢問意願和邀約測評顯示為 disabled</li>
-    <li><input type="checkbox" disabled> disabled 狀態下，選單上方出現提示文案「廣告尚未開啟，開啟後即可使用完整功能」</li>
-    <li><input type="checkbox" disabled> [開啟廣告] 按鈕點擊後，廣告暫停中→另開分頁至 <code>/rms/ad/status?isShowReOpenModal=1</code> 且直接顯示立即恢復刊登圖層</li>
-    <li><input type="checkbox" disabled> [開啟廣告] 按鈕點擊後，廣告關閉中→另開分頁至 <code>/rms/order/general/selectPlan</code></li>
-    <li><input type="checkbox" disabled> 履歷在錄用階段時，邀約選單中不顯示邀約測評，詢問意願為 disabled</li>
-    <li><input type="checkbox" disabled> 上述行為在看板側邊卡片、清單側邊卡片、履歷詳細頁均一致</li>
-  </ul>
+    <h3>🔴 Blocker（必須回答才能開工）</h3>
 
-  <h3>UC-2 新增行程相關</h3>
-  <ul>
-    <li><input type="checkbox" disabled> 廣告暫停/關閉時，邀約三步驟 Step 2 上方顯示「廣告未開啟，不提供聯絡求職者」</li>
-    <li><input type="checkbox" disabled> Step 2 通知求職者預設為「不通知」且無法修改（disabled）</li>
-    <li><input type="checkbox" disabled> Step 2 下方顯示「廣告尚未開啟，開啟後即可通知求職者」及 [開啟廣告] 按鈕</li>
-    <li><input type="checkbox" disabled> Step 3 顯示未通知圖示及「廣告未開啟，不提供聯絡求職者」提示</li>
-    <li><input type="checkbox" disabled> 後端確認行程新增完成但未發出 BC 溝通</li>
-  </ul>
+    <div class="blocker-q">
+      <div class="q-title">Q-001：「修改完成，但未通知求職者」Modal 是否要加上「開啟廣告」CTA？</div>
+      <ul>
+        <li><input type="checkbox" disabled> A. 包含（讓用戶看到提示後可直接跳去恢復廣告）（建議）</li>
+        <li><input type="checkbox" disabled> B. 不包含（只顯示提醒文字，確認後關閉即可）</li>
+        <li><input type="checkbox" disabled> C. 其他：_______</li>
+      </ul>
+    </div>
 
-  <h3>UC-3 修改行程相關</h3>
-  <ul>
-    <li><input type="checkbox" disabled> 廣告暫停/關閉時，修改行程頁面顯示「由於廣告未開啟，本次異動將不會通知求職者」</li>
-    <li><input type="checkbox" disabled> 修改頁面顯示 [開啟廣告] 按鈕，行為同 UC-1</li>
-    <li><input type="checkbox" disabled> 修改完成後，彈出彈窗（非 toast），標題為「修改完成，但未通知求職者」</li>
-    <li><input type="checkbox" disabled> 彈窗內文說明不會通知求職者</li>
-  </ul>
+    <div class="blocker-q">
+      <div class="q-title">Q-002：當用戶在 Step 2 點擊「開啟廣告」在新分頁完成恢復後，返回原 Step 2 是否需要「刷新廣告狀態」？</div>
+      <ul>
+        <li><input type="checkbox" disabled> A. 返回後需手動關閉 modal 重新觸發，不自動偵測</li>
+        <li><input type="checkbox" disabled> B. 頁面監聽廣告狀態變更，自動解鎖 Step 2</li>
+        <li><input type="checkbox" disabled> C. 提供「廣告已恢復，點此繼續」提示按鈕</li>
+        <li><input type="checkbox" disabled> D. 其他：_______</li>
+      </ul>
+    </div>
 
-  <h3>UC-4 刪除/退回相關</h3>
-  <ul>
-    <li><input type="checkbox" disabled> 刪除未過期行程的 pop-up 中，出現醒目底色提示文案「由於廣告未開啟，本次異動不會通知求職者，請確保對方已知行程取消。」</li>
-    <li><input type="checkbox" disabled> 退回上一階段（拖曳/移動至）的 pop-up 中，出現相同醒目底色提示文案</li>
-    <li><input type="checkbox" disabled> 後端確認刪除/退回完成但未發出 BC 溝通</li>
-  </ul>
+    <div class="blocker-q">
+      <div class="q-title">Q-003：BAPP（行動版甄試履歷）此次調整是否同步進行？</div>
+      <ul>
+        <li><input type="checkbox" disabled> A. 此 ticket 一起做（Web + BAPP）</li>
+        <li><input type="checkbox" disabled> B. 另立 ticket，本次 Web 先上</li>
+        <li><input type="checkbox" disabled> C. 其他：_______</li>
+      </ul>
+    </div>
 
-  <h3>UC-5 取消錄用相關</h3>
-  <ul>
-    <li><input type="checkbox" disabled> 廣告暫停/關閉且到職日未過期時，取消錄用 pop-up 顯示醒目底色提示文案</li>
-    <li><input type="checkbox" disabled> 到職日已過期時，可直接取消錄用無需提示</li>
-    <li><input type="checkbox" disabled> 後端確認取消錄用完成但未發出 BC 溝通</li>
-  </ul>
+    <h3>🟡 Warning（強烈建議回答）</h3>
 
-  <h3>通用</h3>
-  <ul>
-    <li><input type="checkbox" disabled> 以上所有情境在看板（含拖曳卡片/移動至）、清單、右側卡片、行事曆均需交叉驗證</li>
-    <li><input type="checkbox" disabled> 廣告刊登中的正常操作不受影響</li>
-  </ul>
+    <div class="warning-q">
+      <div class="q-title">Q-004：醒目底色（highlight）的視覺規格為何？</div>
+      <ul>
+        <li><input type="checkbox" disabled> A. 以 Figma 設計稿為準（<a href="https://www.figma.com/design/GnO3Y6OnZuiubN3Ok3PPJo/%E6%9A%AB%E5%81%9C%E6%AC%8A%E9%99%90%E8%AA%BF%E6%95%B4?node-id=1352-22604" target="_blank">設計稿連結</a>）</li>
+        <li><input type="checkbox" disabled> B. 沿用系統現有 warning 色系（黃底/橘底）</li>
+      </ul>
+    </div>
 
-  <h2>11. 上線注意事項</h2>
-  <ul>
-    <li>後端需同步完成 BC 溝通的阻擋邏輯，確保前端繞過時仍不會發出通知</li>
-    <li><code>/rms/ad/status?isShowReOpenModal=1</code> 需確認 query string 能正確觸發「立即恢復刊登」圖層直接展開</li>
-  </ul>
+    <div class="warning-q">
+      <div class="q-title">Q-005：<code>[開啟廣告]</code> 被瀏覽器 popup blocker 擋住時，前端如何處理？</div>
+      <ul>
+        <li><input type="checkbox" disabled> A. 顯示提示「請允許此頁面開啟新分頁」</li>
+        <li><input type="checkbox" disabled> B. 在同一分頁開啟（不推薦，會中斷操作流程）</li>
+        <li><input type="checkbox" disabled> C. 其他：_______</li>
+      </ul>
+    </div>
 
-  <h2>12. 參考資料</h2>
-  <table>
-    <tr><th>類型</th><th>連結</th></tr>
-    <tr><td>Jira</td><td><a href="https://104corp.atlassian.net/browse/VIPOP-44307" target="_blank">https://104corp.atlassian.net/browse/VIPOP-44307</a></td></tr>
-    <tr><td>Figma</td><td><a href="https://www.figma.com/design/GnO3Y6OnZuiubN3Ok3PPJo/%E6%9A%AB%E5%81%9C%E6%AC%8A%E9%99%90%E8%AA%BF%E6%95%B4?node-id=1352-22604" target="_blank">暫停權限調整 設計稿</a></td></tr>
-    <tr><td>規格書 (Axure)</td><td><a href="https://gzszar.axshare.com/#id=ypva8k&p=%E7%94%84%E8%A9%A6%E5%B1%A5%E6%AD%B7__260427%E5%84%AA%E5%8C%96_&g=1" target="_blank">甄試履歷 (260427優化)</a></td></tr>
-  </table>
+    <div class="warning-q">
+      <div class="q-title">Q-006：「感謝函」目前 disable 行為是否同步加上「開啟廣告」CTA？</div>
+      <ul>
+        <li><input type="checkbox" disabled> A. 是，同步加上 CTA</li>
+        <li><input type="checkbox" disabled> B. 否，維持現有 disable + hover tooltip 樣式</li>
+      </ul>
+    </div>
+
+    <h3>🟢 Info（AI 已做預設假設，無異議視為同意）</h3>
+    <div class="info-q">
+      <ul>
+        <li>A-001：「修改完成，但未通知求職者」Modal 預設只有一個「確認」按鈕，點擊後關閉。</li>
+        <li>A-002：<code>[開啟廣告]</code> CTA 一律以 <code>target="_blank"</code> 另開新分頁，不影響當前操作畫面。</li>
+        <li>A-003：廣告狀態判斷由前端 render 時即時讀取，不需額外後端 endpoint。</li>
+        <li>A-004：刪除<strong>已過期</strong>行程不受此次調整影響，正常可操作。</li>
+        <li>A-005：看板（含拖曳）、清單、右側卡片、行事曆四條動線，均套用相同的提示邏輯。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="warning" style="margin-top:2rem;">
+    ⚠️ 本規格書為 v1 草稿，由 Jira VIPOP-44307 及 Axure 規格（甄試履歷 260427優化）自動產出。內容需經 PM/PO 確認後才算定稿。
+  </div>
 
   <div class="spec-footer">
-    <p>規格書產生時間：2026-04-10</p>
-    <p>資料來源：Jira VIPOP-44307 + Axure 規格書 + Figma 設計稿</p>
-    <p>產生方式：jira-to-spec skill 自動產出，內容需經 PM/PO 確認後才算定稿</p>
+    <p>規格書產生時間：2026-04-21</p>
+    <p>資料來源：Jira VIPOP-44307 + Axure gzszar.axshare.com（甄試履歷 260427優化）+ Figma 暫停權限調整</p>
+    <p>產生方式：jira-to-spec skill 自動產出，內容需經 PM/PO 確認</p>
   </div>
 
   <script>
