@@ -25,7 +25,7 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 
 ### Step 0：前置確認（平行執行，節省時間）
 
-同時執行以下三件事：
+同時執行以下四件事：
 
 **A. 檢查 template 更新**
 用 filesystem MCP 讀取 `~/.skill-sources/last-template-change.md`：
@@ -40,6 +40,11 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 用 filesystem MCP 讀取 `{SKILL_REPO}/jira-to-spec/references/template.md`：
 - 成功 → 作為規格書結構
 - 失敗 → 使用本檔末尾「內建備用模板」，並告知使用者
+
+**D. 若 Jira description 含 axshare.com 連結 → 立即詢問 Axure 密碼**
+- 不等到 Step 2C 才中斷，在 Step 0 就先問：
+  > 「偵測到 Axure 規格書（{axure_url}），請提供存取密碼，我才能截圖並納入規格書。」
+- 收到密碼後繼續執行 Step 1；密碼會在 Step 2C 使用
 
 ---
 
@@ -83,14 +88,52 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 - 失敗 → 略過，在參考資料留連結即可
 
 **2C. Axure 規格書截圖**（若偵測到 axshare.com 連結）
-```
-工具：Playwright MCP → browser_screenshot
-```
-- 只截取關鍵規格頁面，最多 2 張
-- 記錄：`{ data: base64, label: "來源：Axure 規格書" }`
-- 失敗 → 略過
 
-> 圖片總數上限：**7 張**（Jira 5 + Figma/Axure 2），超過不再取，避免 token 暴增。
+> ⚠️ **Axure 為必要步驟，不可跳過。** 偵測到 axshare.com 連結時，必須完成以下流程才能繼續。
+
+**步驟 2C-0：確認密碼已取得（來自 Step 0D）**
+- 密碼已在 Step 0D 取得，直接繼續執行 2C-1
+- 若 Step 0D 未執行（舊流程補救）→ 此時暫停詢問密碼後再繼續
+
+**步驟 2C-1：確認 Playwright MCP 可用**
+- 嘗試呼叫 `browser_navigate` 前，先確認 Playwright MCP 工具可被呼叫
+- 若 Playwright MCP 不可用（工具不存在或呼叫失敗）→ **中斷整個規格書流程**，回報：
+  > 「無法使用 Playwright MCP，Axure 規格書無法存取。請確認 Playwright MCP 已啟用後重試。」
+
+**步驟 2C-2：開啟 Axure 並輸入密碼**
+```
+工具：Playwright MCP → browser_navigate → browser_evaluate → browser_screenshot
+```
+- 導航至 axshare.com 連結
+- 若頁面出現密碼輸入欄位，填入使用者提供的密碼並送出
+- 若密碼錯誤或無法通過驗證 → **中斷流程**，回報：
+  > 「Axure 密碼驗證失敗，請確認密碼是否正確後重試。」
+- 若頁面無法載入（網路錯誤、404 等） → **中斷流程**，回報：
+  > 「Axure 規格書無法存取（{錯誤原因}），請確認連結是否有效。」
+
+**步驟 2C-3：列出所有頁面，決定截圖清單**
+- 進入 Axure 後，先用 `browser_snapshot` 或點擊左側 Project Pages 展開頁面清單
+- 記錄所有頁面名稱與數量（標題列會顯示「N of M」）
+
+**步驟 2C-4：逐頁截圖**
+- 截圖前使用 `browser_resize` 將視窗調整至 **1440×900**，減少不必要滾動
+- 每頁進入後，用 `browser_evaluate` 查詢 **iframe 內部** 的捲動尺寸（Axure 用 iframe 渲染，`document.body` 無效）：
+  ```js
+  () => {
+    const iframe = document.querySelector('iframe');
+    if (!iframe) return null;
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    return { scrollWidth: doc.body.scrollWidth, scrollHeight: doc.body.scrollHeight,
+             clientWidth: doc.body.clientWidth, clientHeight: doc.body.clientHeight };
+  }
+  ```
+- 若 `scrollHeight > clientHeight`（可向下滾動）→ 先截圖上方，再按 `PageDown` 鍵滾動（**不可用 `window.scrollTo`，在 iframe 架構下無效**），再截一張
+- 若 `scrollWidth > clientWidth`（可向右滾動）→ 先截圖左側，再按 `End` 鍵滾至最右再截一張
+- 若畫面可雙向滾動，依序截：左上 → 右上 → 左下 → 右下（最多 4 張分區截圖）
+- 記錄：`{ data: base64, label: "來源：Axure 規格書（第 N 張／共 M 張）" }`
+
+> 圖片總數上限：**10 張**（Jira 5 + Figma 2 + Axure 最多 4），超過不再取，避免 token 暴增。
+> Axure 若無滾動需求則 1 張即可；有上下或左右滾動則最多 4 張分區截圖。
 
 ---
 
