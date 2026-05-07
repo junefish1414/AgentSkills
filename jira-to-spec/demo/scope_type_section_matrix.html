@@ -1,0 +1,242 @@
+
+<h2 class="sr-only">scope 與 type 對應 Section 的互動矩陣圖</h2>
+
+<style>
+  .container { padding: 1rem 0; font-family: var(--font-sans); }
+  .legend-row { display: flex; gap: 16px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); }
+  .dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .dot-required { background: #185FA5; }
+  .dot-optional { background: #B5D4F4; }
+  .dot-none { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); }
+  .matrix-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; }
+  thead th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); padding: 6px 4px; text-align: center; vertical-align: bottom; line-height: 1.3; }
+  thead th.row-header { text-align: left; min-width: 130px; padding-left: 0; }
+  tbody tr { border-top: 0.5px solid var(--color-border-tertiary); }
+  tbody tr:hover td { background: var(--color-background-secondary); }
+  tbody td { padding: 6px 4px; text-align: center; }
+  tbody td.row-label { text-align: left; font-size: 12px; padding-left: 0; }
+  .scope-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); display: block; }
+  .type-label { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .cell { width: 24px; height: 24px; border-radius: 4px; margin: auto; cursor: pointer; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .cell:hover { transform: scale(1.2); }
+  .cell-required { background: #185FA5; color: #E6F1FB; }
+  .cell-optional { background: #B5D4F4; color: #185FA5; }
+  .cell-none { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); }
+  .tooltip { position: fixed; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; font-size: 12px; color: var(--color-text-primary); pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 999; max-width: 220px; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .section-tabs { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .tab { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 0.5px solid var(--color-border-secondary); cursor: pointer; color: var(--color-text-secondary); background: transparent; transition: all 0.1s; }
+  .tab.active { background: var(--color-background-info); color: var(--color-text-info); border-color: transparent; font-weight: 500; }
+  .summary-bar { margin-top: 1rem; padding: 10px 14px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); font-size: 12px; color: var(--color-text-secondary); min-height: 36px; }
+  .summary-bar strong { color: var(--color-text-primary); font-weight: 500; }
+  .section-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .pill-required { background: #E6F1FB; color: #0C447C; }
+  .pill-optional { background: #f0f6fd; color: #378ADD; }
+</style>
+
+<div class="container">
+  <div class="legend-row">
+    <div class="legend-item"><div class="dot dot-required"></div>必填</div>
+    <div class="legend-item"><div class="dot dot-optional"></div>選填</div>
+    <div class="legend-item"><div class="dot dot-none"></div>不適用</div>
+  </div>
+
+  <div class="section-tabs" id="filter-tabs">
+    <button class="tab active" data-filter="all">全部 scope</button>
+    <button class="tab" data-filter="patch">patch</button>
+    <button class="tab" data-filter="feature">feature</button>
+    <button class="tab" data-filter="removal">removal</button>
+    <button class="tab" data-filter="tracking">tracking</button>
+  </div>
+
+  <div class="matrix-wrap">
+    <table id="matrix-table">
+      <thead>
+        <tr>
+          <th class="row-header">scope / type</th>
+          <th>1<br>影響範圍</th>
+          <th>2<br>權限設計</th>
+          <th>3<br>文案版面</th>
+          <th>4<br>操作流程</th>
+          <th>5<br>提示文案</th>
+          <th>6<br>商業規則</th>
+          <th>7<br>狀態變化</th>
+          <th>8<br>功能移除</th>
+          <th>9<br>頁面結構</th>
+          <th>10<br>表單</th>
+          <th>11<br>列表搜尋</th>
+          <th>12<br>追蹤埋點</th>
+          <th>13<br>通知信件</th>
+          <th>14<br>既有頁面</th>
+          <th>15<br>錯誤處理</th>
+          <th>16<br>例外情境</th>
+        </tr>
+      </thead>
+      <tbody id="matrix-body"></tbody>
+    </table>
+  </div>
+
+  <div class="summary-bar" id="summary">點擊任一格或行，查看說明</div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const SECTIONS = [
+  { n: 1, label: '影響範圍', desc: '受影響角色、頁面、這次不改的項目' },
+  { n: 2, label: '權限設計', desc: '角色權限矩陣與檢查時機' },
+  { n: 3, label: '文案版面', desc: '文字異動、版面調整、響應式差異' },
+  { n: 4, label: '操作流程', desc: '現行流程、調整後流程與 Mermaid 流程圖' },
+  { n: 5, label: '提示文案', desc: 'Modal / Toast / Banner / Tooltip 定義' },
+  { n: 6, label: '商業規則', desc: '計費規則、額度規則、各角色可做什麼' },
+  { n: 7, label: '狀態變化', desc: '狀態切換條件與 Mermaid 狀態圖' },
+  { n: 8, label: '功能移除', desc: '移除後體驗、舊入口導向、資料處理' },
+  { n: 9, label: '頁面結構', desc: 'URL、頁面區塊、四種狀態、SEO' },
+  { n: 10, label: '表單', desc: '欄位定義、驗證規則、輸入處理、送出行為' },
+  { n: 11, label: '列表搜尋', desc: '排序、分頁、篩選條件、空狀態' },
+  { n: 12, label: '追蹤埋點', desc: '事件名稱、攜帶參數、轉換漏斗' },
+  { n: 13, label: '通知信件', desc: 'Email / 站內信 / Push 的觸發與頻率' },
+  { n: 14, label: '既有頁面', desc: '專案中涉及的舊頁面調整說明' },
+  { n: 15, label: '錯誤處理', desc: '頁面層 / 操作層 / 表單驗證 / 恢復策略' },
+  { n: 16, label: '例外情境', desc: '操作 / 網路 / 資料 / 裝置 / 權限 / 併發' },
+];
+
+const ROWS = [
+  {
+    scope: 'patch', type: 'content',
+    label: 'patch + content', desc: '改文案、小幅版面調整',
+    required: [1,3], optional: [15,16]
+  },
+  {
+    scope: 'patch', type: 'interaction',
+    label: 'patch + interaction', desc: '改按鈕行為、小幅流程調整',
+    required: [1,4,5], optional: [15,16]
+  },
+  {
+    scope: 'patch', type: 'ga',
+    label: 'patch + ga', desc: '小改動同時加埋點',
+    required: [1,12], optional: [16]
+  },
+  {
+    scope: 'feature', type: 'interaction',
+    label: 'feature + interaction', desc: '新功能、完整使用者流程',
+    required: [1,2,4,5,15,16], optional: [6,9,10,11,12,13,14]
+  },
+  {
+    scope: 'feature', type: 'permission',
+    label: 'feature + permission', desc: '新功能、涉及角色權限判斷',
+    required: [1,2,4,6,15,16], optional: [5,7,9]
+  },
+  {
+    scope: 'feature', type: 'mixed',
+    label: 'feature + mixed', desc: '新功能、複合多種面向',
+    required: [1,2,4,5,6,15,16], optional: [3,7,9,10,11,12,13,14]
+  },
+  {
+    scope: 'removal', type: '',
+    label: 'removal', desc: '移除既有功能或頁面',
+    required: [1,8,15], optional: [12,13]
+  },
+  {
+    scope: 'tracking', type: '',
+    label: 'tracking', desc: '純粹追蹤埋點，不改 UI',
+    required: [1,12], optional: [16]
+  },
+];
+
+function getState(row, sectionN) {
+  if (row.required.includes(sectionN)) return 'required';
+  if (row.optional.includes(sectionN)) return 'optional';
+  return 'none';
+}
+
+let activeFilter = 'all';
+let activeRow = null;
+
+function renderTable() {
+  const tbody = document.getElementById('matrix-body');
+  tbody.innerHTML = '';
+  const filtered = activeFilter === 'all' ? ROWS : ROWS.filter(r => r.scope === activeFilter);
+  filtered.forEach((row, ri) => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    const tdLabel = document.createElement('td');
+    tdLabel.className = 'row-label';
+    tdLabel.innerHTML = `<span class="scope-label">${row.scope}${row.type ? '' : ''}</span><span class="type-label">${row.type ? row.type : row.scope}</span>`;
+    tr.appendChild(tdLabel);
+
+    SECTIONS.forEach(sec => {
+      const state = getState(row, sec.n);
+      const td = document.createElement('td');
+      const cell = document.createElement('div');
+      cell.className = `cell cell-${state}`;
+      if (state === 'required') cell.textContent = '●';
+      else if (state === 'optional') cell.textContent = '○';
+      cell.addEventListener('mouseenter', (e) => showTooltip(e, row, sec, state));
+      cell.addEventListener('mouseleave', hideTooltip);
+      td.appendChild(cell);
+      tr.appendChild(td);
+    });
+
+    tr.addEventListener('click', () => {
+      activeRow = activeRow === ri ? null : ri;
+      renderTable();
+      if (activeRow !== null) showRowSummary(filtered[activeRow]);
+      else document.getElementById('summary').innerHTML = '點擊任一格或行，查看說明';
+    });
+
+    if (activeRow === ri) {
+      tr.style.background = 'var(--color-background-secondary)';
+    }
+
+    tbody.appendChild(tr);
+  });
+}
+
+function showRowSummary(row) {
+  const reqPills = row.required.map(n => {
+    const s = SECTIONS.find(s => s.n === n);
+    return `<span class="pill pill-required">${n}. ${s.label}</span>`;
+  }).join('');
+  const optPills = row.optional.map(n => {
+    const s = SECTIONS.find(s => s.n === n);
+    return `<span class="pill pill-optional">${n}. ${s.label}</span>`;
+  }).join('');
+  document.getElementById('summary').innerHTML =
+    `<strong>${row.label}</strong> — ${row.desc}<br>
+    <div class="section-pills" style="margin-top:6px">
+      <span style="font-size:11px;color:var(--color-text-secondary);margin-right:4px">必填</span>${reqPills}
+      ${row.optional.length ? `<span style="font-size:11px;color:var(--color-text-secondary);margin:0 4px">選填</span>${optPills}` : ''}
+    </div>`;
+}
+
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, row, sec, state) {
+  if (state === 'none') return;
+  const label = state === 'required' ? '必填' : '選填';
+  tooltip.innerHTML = `<strong>${row.label}</strong><br>Section ${sec.n}：${sec.label}（${label}）<br><span style="color:var(--color-text-secondary)">${sec.desc}</span>`;
+  tooltip.style.opacity = '1';
+  moveTooltip(e);
+}
+function moveTooltip(e) {
+  tooltip.style.left = (e.clientX + 12) + 'px';
+  tooltip.style.top = (e.clientY - 8) + 'px';
+}
+function hideTooltip() { tooltip.style.opacity = '0'; }
+document.addEventListener('mousemove', e => { if (tooltip.style.opacity === '1') moveTooltip(e); });
+
+document.getElementById('filter-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('[data-filter]');
+  if (!btn) return;
+  activeFilter = btn.dataset.filter;
+  activeRow = null;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('summary').innerHTML = '點擊任一格或行，查看說明';
+  renderTable();
+});
+
+renderTable();
+</script>
