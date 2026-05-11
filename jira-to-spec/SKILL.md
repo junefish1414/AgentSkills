@@ -185,7 +185,7 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 
 ---
 
-### Step 5：在規格書末尾加入 PO 補問清單
+### Step 5：在規格書中未明確的項目整理成 PO 補問清單
 
 將所有 ⚠️ 彙整，分三級，用選擇題格式：
 
@@ -213,75 +213,16 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 
 用 filesystem MCP 寫入兩個檔案：
 
-**6A. Markdown 檔**
+**6A. spec Markdown 檔**
 ```
 路徑：{SKILL_REPO}/docs/{ISSUE_KEY}/{ISSUE_KEY}-spec.md
 內容：完整規格書 Markdown（含 base64 圖片）
 ```
 
-**6B. HTML 檔**
-將 Markdown 轉為 HTML，寫入：
+**6B. PO 補問清單 Markdown 檔**
 ```
-路徑：{SKILL_REPO}/docs/{ISSUE_KEY}/{ISSUE_KEY}-spec.html
-```
-
-HTML 轉換規則：
-- frontmatter → 頁首 metadata 資訊卡
-- `## 標題` → `<h2>`，`### 子標題` → `<h3>`
-- 表格 → `<table>`（含 hover 樣式）
-- ` ```mermaid ` → `<pre class="mermaid">`（由 Mermaid.js CDN 渲染）
-- `⚠️ 文字` → `<div class="warning">`
-- `- [ ]` → `<input type="checkbox" disabled>`
-- `![label](data:image/...)` → `<figure><img src="data:image/..."><figcaption>label</figcaption></figure>`
-- base64 圖片加 `max-width: 100%; border-radius: 4px; margin: 1rem 0`
-
-HTML 使用以下精簡樣式（inline，不依賴外部 CSS）：
-
-```html
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{ISSUE_KEY} 規格書</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8f9fa;color:#1a1a1a;line-height:1.7;padding:2rem;max-width:960px;margin:0 auto}
-    .meta{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:1.25rem 1.5rem;margin:.5rem 0 2rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.5rem 2rem}
-    .meta span{font-size:.85rem;color:#555}.meta strong{color:#1a1a1a}
-    h1{font-size:1.6rem;margin-bottom:.25rem}
-    h2{font-size:1.3rem;margin:2.5rem 0 1rem;padding-bottom:.4rem;border-bottom:2px solid #e0e0e0}
-    h3{font-size:1.1rem;margin:1.5rem 0 .75rem}
-    p{margin-bottom:.75rem}ul,ol{margin:.5rem 0 1rem 1.5rem}li{margin-bottom:.35rem}
-    code{background:#f0f0f0;padding:.15rem .4rem;border-radius:3px;font-size:.9em}
-    table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}
-    th,td{border:1px solid #ddd;padding:.5rem .75rem;text-align:left}
-    th{background:#f5f5f5;font-weight:600}tr:hover td{background:#fafafa}
-    .mermaid{background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:1.5rem;margin:1rem 0;text-align:center}
-    .warning{background:#fff8e1;border-left:4px solid #ffc107;padding:.75rem 1rem;margin:.75rem 0;border-radius:0 4px 4px 0;font-size:.9rem}
-    figure{margin:1rem 0}figure img{max-width:100%;border-radius:4px;border:1px solid #e0e0e0}
-    figcaption{font-size:.8rem;color:#888;margin-top:.25rem}
-    input[type=checkbox]{margin-right:.4rem}
-    footer{margin-top:3rem;padding-top:1rem;border-top:1px solid #e0e0e0;font-size:.8rem;color:#888}
-  </style>
-</head>
-<body>
-  <h1>📋 {ISSUE_KEY} — {title}</h1>
-  <div class="meta">
-    <span><strong>Scope：</strong>{scope}</span>
-    <span><strong>Type：</strong>{type}</span>
-    <span><strong>Created：</strong>{created}</span>
-    <span><strong>Deadline：</strong>{deadline}</span>
-    <span><strong>Related：</strong>{related}</span>
-  </div>
-  {BODY_HTML}
-  <footer>
-    <p>產生時間：{timestamp}　資料來源：Jira {ISSUE_KEY}　產生方式：jira-to-spec skill 自動產出，需 PM/PO 確認</p>
-  </footer>
-  <script>mermaid.initialize({startOnLoad:true,theme:'default',flowchart:{useMaxWidth:true,htmlLabels:true}})</script>
-</body>
-</html>
+路徑：{SKILL_REPO}/docs/{ISSUE_KEY}/{ISSUE_KEY}-checkList.md
+內容：僅包含 PO 補問清單的 Markdown
 ```
 
 ---
@@ -296,16 +237,13 @@ HTML 使用以下精簡樣式（inline，不依賴外部 CSS）：
 📁 檔案位置
    {SKILL_REPO}/docs/{ISSUE_KEY}/
    ├── {ISSUE_KEY}-spec.md
-   └── {ISSUE_KEY}-spec.html
+   └── {ISSUE_KEY}-checkList.md（僅 PO 補問清單）
 
 📊 規格書摘要
    scope: {scope} | type: {type}
    填充 Section: {已填 Section 編號列表}
    ⚠️ 待確認項目: {N} 個（含 Blocker {X} 個）
    🖼️ 嵌入圖片: {N} 張（Jira {X} 張 / Figma {X} 張 / Axure {X} 張）
-
-🔴 Blocker 摘要（需優先回答）
-   {逐條列出 Blocker 問題，最多顯示 3 條}
 
 {若 Step 0A 偵測到 template 更新}
 📢 Template 有更新：{變動摘要一行}
