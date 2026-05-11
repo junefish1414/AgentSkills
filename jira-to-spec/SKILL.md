@@ -5,9 +5,9 @@ description: >
   觸發語句包含但不限於：「幫 VIPOP-XXXXX 寫規格書」、「把 VIPOP-XXXXX 整理成規格書」、
   「VIPOP-XXXXX 的規格書」、「幫我產這張票的 spec」、「VIPOP-XXXXX spec」。
   自動透過 Atlassian MCP 讀取 Jira 任務內容，結合規格書標準模板，
-  產出規格書 Markdown 與 HTML 檔案至 docs/{ISSUE_KEY}/。
+  產出規格書 Markdown 與 HTML 檔案至 {repo}/ra-docs/{ISSUE_KEY}/。
   注意：若使用者只說「分析 VIPOP-XXXXX」而未提及規格書/spec，應觸發 jira-analyzer 而非此 skill。
-compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playwright MCP"
+compatibility: "需要 Atlassian MCP、filesystem MCP；若有 Axure 連結則需要 axure-to-md skill"
 ---
 
 # Jira to Spec — 從 Jira Ticket 產出規格書
@@ -23,28 +23,35 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 
 ## 執行步驟
 
-### Step 0：前置確認（平行執行，節省時間）
+### Step 0：收集資訊與前置作業
 
-同時執行以下四件事：
+**0A. 向使用者收集必要資訊**
 
-**A. 檢查 template 更新**
-用 filesystem MCP 讀取 `~/.skill-sources/last-template-change.md`：
-- 存在 → 記錄變動摘要，於最後輸出時告知使用者
-- 不存在 → 略過
+若對話中尚未提供，請同時詢問：
+1. **Jira 單號**（例如 VIPOP-44376）
+2. **repo 在本機的絕對路徑**（例如 `/Users/yourname/projects/my-repo`）
 
-**B. 確認輸出目錄**
-用 filesystem MCP 確認 `{SKILL_REPO}/docs/{ISSUE_KEY}/` 是否存在，不存在則建立。
-`SKILL_REPO` 從 `~/.skill-sources/config` 讀取。
+收到兩項資訊後，才繼續執行後續步驟。
 
-**C. 讀取最新模板**
+---
+
+**0B. 清空並重建輸出目錄**
+
+每次執行都要做，確保不保留舊版本殘留：
+
+```bash
+rm -rf {repo}/ra-docs/{ISSUE_KEY}
+mkdir -p {repo}/ra-docs/{ISSUE_KEY}/images
+mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
+```
+
+---
+
+**0C. 讀取最新模板**
+
 用 filesystem MCP 讀取 `{SKILL_REPO}/jira-to-spec/references/template.md`：
 - 成功 → 作為規格書結構
 - 失敗 → 使用本檔末尾「內建備用模板」，並告知使用者
-
-**D. 若 Jira description 含 axshare.com 連結 → 立即詢問 Axure 密碼**
-- 不等到 Step 2C 才中斷，在 Step 0 就先問：
-  > 「偵測到 Axure 規格書（{axure_url}），請提供存取密碼，我才能截圖並納入規格書。」
-- 收到密碼後繼續執行 Step 1；密碼會在 Step 2C 使用
 
 ---
 
@@ -62,82 +69,84 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 解析重點：
 - `description`：主要規格來源
 - `comment`：含「改為」「調整」「要補做」的留言視為規格補充，一併納入
-- `attachment`：掃描是否有 Figma / Axure 連結，有則記錄供 Step 2 使用
+- `attachment`：下載所有 Jira 附件，存至 `{repo}/ra-docs/{ISSUE_KEY}/files/`
 - `subtasks`：列出子任務清單，納入影響範圍
+
+**偵測 Axure 連結（在 description 與所有 comment 中搜尋）**：
+
+掃描 description 與所有 comment 的文字，尋找包含 `axshare.com` 的 URL。
+
+- **有找到** → 記錄完整 URL（例如 `https://ng0704.axshare.com/`），進入 Step 1A
+- **沒有找到** → 跳過 Step 1A，直接進入 Step 2
 
 ---
 
-### Step 2：收集圖片資源（選擇性，最多 3 個來源）
+**Step 1A：詢問 Axure 密碼（僅在偵測到 axshare.com 連結時執行）**
 
-**依序嘗試，任一失敗不中斷流程：**
+在繼續之前，**先暫停詢問使用者**：
 
-**2A. Jira 附件圖片**（最優先）
-```
-工具：mcp-atlassian:jira_get_issue_images
-參數：issue_key: "{ISSUE_KEY}"
-```
-- 取回後**只挑最多 5 張**最能說明規格的圖片（跳過純截圖紀錄、驗收截圖）
-- 每張記錄：`{ data: base64, label: "來源：Jira {ISSUE_KEY} 附件", section: "對應的 Section" }`
+> 「偵測到 Axure 規格書：`{axure_url}`
+> 請問這份 Axure 是否有設定存取密碼？有的話請提供。」
 
-**2B. Figma 設計稿截圖**（若 Step 1 偵測到 figma.com 連結）
-```
-工具：Playwright MCP → browser_screenshot
-```
-- 只截取主要設計畫面，最多 2 張
-- 記錄：`{ data: base64, label: "來源：Figma 設計稿" }`
-- 失敗 → 略過，在參考資料留連結即可
+收到密碼（或確認無密碼）後，才繼續執行 Step 2。
 
-**2C. Axure 規格書截圖**（若偵測到 axshare.com 連結）
+---
 
-> ⚠️ **Axure 為必要步驟，不可跳過。** 偵測到 axshare.com 連結時，必須完成以下流程才能繼續。
+### Step 2：平行派出 subagent
 
-**步驟 2C-0：確認密碼已取得（來自 Step 0D）**
-- 密碼已在 Step 0D 取得，直接繼續執行 2C-1
-- 若 Step 0D 未執行（舊流程補救）→ 此時暫停詢問密碼後再繼續
+取得 Jira 資料（與 Axure 密碼）後，**同時**派出以下 subagent 平行執行：
 
-**步驟 2C-1：確認 Playwright MCP 可用**
-- 嘗試呼叫 `browser_navigate` 前，先確認 Playwright MCP 工具可被呼叫
-- 若 Playwright MCP 不可用（工具不存在或呼叫失敗）→ **中斷整個規格書流程**，回報：
-  > 「無法使用 Playwright MCP，Axure 規格書無法存取。請確認 Playwright MCP 已啟用後重試。」
+---
 
-**步驟 2C-2：開啟 Axure 並輸入密碼**
-```
-工具：Playwright MCP → browser_navigate → browser_evaluate → browser_screenshot
-```
-- 導航至 axshare.com 連結
-- 若頁面出現密碼輸入欄位，填入使用者提供的密碼並送出
-- 若密碼錯誤或無法通過驗證 → **中斷流程**，回報：
-  > 「Axure 密碼驗證失敗，請確認密碼是否正確後重試。」
-- 若頁面無法載入（網路錯誤、404 等） → **中斷流程**，回報：
-  > 「Axure 規格書無法存取（{錯誤原因}），請確認連結是否有效。」
+**Subagent A：整理 Jira 資料**
 
-**步驟 2C-3：列出所有頁面，決定截圖清單**
-- 進入 Axure 後，先用 `browser_snapshot` 或點擊左側 Project Pages 展開頁面清單
-- 記錄所有頁面名稱與數量（標題列會顯示「N of M」）
+任務：
+1. 將 Jira 的 `description` 與所有 `comment`（優先含「改為」「調整」「要補做」的留言）整理成 Markdown，寫入：
+   ```
+   {repo}/ra-docs/{ISSUE_KEY}/jira.md
+   ```
+   格式建議：
+   ```markdown
+   # {ISSUE_KEY} — {summary}
 
-**步驟 2C-4：逐頁截圖**
-- 截圖前使用 `browser_resize` 將視窗調整至 **1440×900**，減少不必要滾動
-- 每頁進入後，用 `browser_evaluate` 查詢 **iframe 內部** 的捲動尺寸（Axure 用 iframe 渲染，`document.body` 無效）：
-  ```js
-  () => {
-    const iframe = document.querySelector('iframe');
-    if (!iframe) return null;
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    return { scrollWidth: doc.body.scrollWidth, scrollHeight: doc.body.scrollHeight,
-             clientWidth: doc.body.clientWidth, clientHeight: doc.body.clientHeight };
-  }
+   ## 描述
+   {description 轉 Markdown}
+
+   ## 留言（規格相關）
+   ### {留言作者} ({留言時間})
+   {留言內容}
+   ```
+
+2. 下載所有 Jira 附件，存至：
+   ```
+   {repo}/ra-docs/{ISSUE_KEY}/files/
+   ```
+   使用 `mcp-atlassian:jira_get_issue_images` 或附件 URL 下載。
+
+---
+
+**Subagent B：處理 Axure（僅在 Step 1 偵測到 axshare.com 連結時派出）**
+
+任務：
+- 使用 `axure-to-md` skill，將 Axure 規格書轉換為 Markdown
+- 輸出存至：
   ```
-- 若 `scrollHeight > clientHeight`（可向下滾動）→ 先截圖上方，再按 `PageDown` 鍵滾動（**不可用 `window.scrollTo`，在 iframe 架構下無效**），再截一張
-- 若 `scrollWidth > clientWidth`（可向右滾動）→ 先截圖左側，再按 `End` 鍵滾至最右再截一張
-- 若畫面可雙向滾動，依序截：左上 → 右上 → 左下 → 右下（最多 4 張分區截圖）
-- 記錄：`{ data: base64, label: "來源：Axure 規格書（第 N 張／共 M 張）" }`
+  {repo}/ra-docs/{ISSUE_KEY}/spec.md
+  images/ 子目錄下存放說明圖片
+  ```
+- 傳入參數：Axure URL、密碼（若有）、repo 路徑、Jira 單號
 
-> 圖片總數上限：**10 張**（Jira 5 + Figma 2 + Axure 最多 4），超過不再取，避免 token 暴增。
-> Axure 若無滾動需求則 1 張即可；有上下或左右滾動則最多 4 張分區截圖。
+若無 Axure 連結，**不派出 Subagent B**，後續 Step 4 僅參考 `jira.md`。
+
+---
+
+等所有 subagent 都完成後，繼續 Step 3。
 
 ---
 
 ### Step 3：判斷需求類型
+
+讀取 `jira.md`（若有 `spec.md` 也一併參考），判斷：
 
 **scope 判斷：**
 - 修改文案 / 小幅 UI → `patch`
@@ -168,20 +177,39 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 
 ---
 
-### Step 4：填充規格書內容
+### Step 4：讀取來源資料並填充規格書
+
+**Step 4A：讀取所有可用來源**
+
+在填充前，依序讀取以下資料（全部讀完再開始寫）：
+
+1. **`{repo}/ra-docs/{ISSUE_KEY}/jira.md`** — Jira 描述與規格留言
+2. **`{repo}/ra-docs/{ISSUE_KEY}/spec.md`**（若存在）— Axure 規格書全文
+3. **`{repo}/ra-docs/{ISSUE_KEY}/images/`** — 列出所有截圖檔名，了解有哪些 BEFORE/AFTER 對比圖可引用
+4. **`{repo}/ra-docs/{ISSUE_KEY}/files/`** — 列出所有附件檔名（例如 PDF、Excel），在規格書中標注「參考附件：{檔名}」
+
+```bash
+# 列出 images/ 和 files/ 內容
+ls {repo}/ra-docs/{ISSUE_KEY}/images/
+ls {repo}/ra-docs/{ISSUE_KEY}/files/
+```
+
+**來源優先順序**：
+- 有 `spec.md`（Axure 轉出）→ 以 `spec.md` 為主要規格來源，`jira.md` 作補充
+- 無 `spec.md` → 僅參考 `jira.md`
+
+**Step 4B：填充規格書**
 
 依 Step 3 決定的 Section 清單填充，遵循以下原則：
 
-1. **忠實呈現**：Jira 未提及用 `⚠️ 未提及，建議與 PM 確認` 標註，不捏造
+1. **忠實呈現**：來源檔未提及用 `⚠️ 未提及，建議與 PM 確認` 標註，不捏造
 2. **留言補充**：含「改為」「調整」「要補做」的留言內容納入對應 Section
 3. **操作流程附流程圖**：Section 4 每個流程附 Mermaid `flowchart TD`
 4. **狀態變化附狀態圖**：Section 7 狀態變化用 Mermaid `stateDiagram-v2`
-5. **Section 16 主動出題**：AI 依需求類型主動補充極端情境，每條標示「🤖 AI 建議」或「⚠️ 未定義」
-6. **圖片嵌入**：將 Step 2 收集的圖片依 `section` 欄位，嵌入對應 Section 末尾：
-   ```markdown
-   ![來源：Jira VIPOP-XXXXX 附件](data:image/png;base64,{base64})
-   ```
-7. **前端視角**：所有分析以前端工程師角度出發
+5. **引用截圖**：`images/` 下的圖片若與該 Section 相關，以相對路徑引用（例如 `images/preLogin-BEFORE.png`），並加上說明文字
+6. **引用附件**：`files/` 下的附件在相關 Section 標注「參考附件：{檔名}」
+7. **Section 16 主動出題**：AI 依需求類型主動補充極端情境，每條標示「🤖 AI 建議」或「⚠️ 未定義」
+8. **前端視角**：所有分析以前端工程師角度出發
 
 ---
 
@@ -211,17 +239,17 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 
 ### Step 6：寫入檔案
 
-用 filesystem MCP 寫入兩個檔案：
+用 filesystem MCP 寫入兩個檔案至 `{repo}/ra-docs/{ISSUE_KEY}/`：
 
 **6A. spec Markdown 檔**
 ```
-路徑：{SKILL_REPO}/docs/{ISSUE_KEY}/{ISSUE_KEY}-spec.md
-內容：完整規格書 Markdown（含 base64 圖片）
+路徑：{repo}/ra-docs/{ISSUE_KEY}/{ISSUE_KEY}-spec.md
+內容：完整規格書 Markdown
 ```
 
 **6B. PO 補問清單 Markdown 檔**
 ```
-路徑：{SKILL_REPO}/docs/{ISSUE_KEY}/{ISSUE_KEY}-checkList.md
+路徑：{repo}/ra-docs/{ISSUE_KEY}/{ISSUE_KEY}-checkList.md
 內容：僅包含 PO 補問清單的 Markdown
 ```
 
@@ -235,7 +263,10 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 ✅ 規格書已產出
 
 📁 檔案位置
-   {SKILL_REPO}/docs/{ISSUE_KEY}/
+   {repo}/ra-docs/{ISSUE_KEY}/
+   ├── jira.md                （Jira 描述與留言）
+   ├── spec.md                （Axure 規格，若有）
+   ├── files/                 （Jira 附件）
    ├── {ISSUE_KEY}-spec.md
    └── {ISSUE_KEY}-checkList.md（僅 PO 補問清單）
 
@@ -243,7 +274,6 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
    scope: {scope} | type: {type}
    填充 Section: {已填 Section 編號列表}
    ⚠️ 待確認項目: {N} 個（含 Blocker {X} 個）
-   🖼️ 嵌入圖片: {N} 張（Jira {X} 張 / Figma {X} 張 / Axure {X} 張）
 
 {若 Step 0A 偵測到 template 更新}
 📢 Template 有更新：{變動摘要一行}
@@ -257,7 +287,6 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；建議同時啟用 Playw
 - 資訊不足時標註 `⚠️`，**絕對不捏造**
 - Section 只填有意義的，不填空殼
 - Bug 類型 ticket → 提示「建議改用 jira-analyzer 分析」
-- 圖片超過 7 張上限時，優先保留「操作流程」和「UI 設計稿」相關的圖片
 
 ---
 
