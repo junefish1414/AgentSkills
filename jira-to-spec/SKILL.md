@@ -92,11 +92,13 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 
 ---
 
-### Step 2：平行派出 subagent
+### Step 2：兩階段派出 subagent
 
-取得 Jira 資料（與 Axure 密碼）後，**同時**派出以下 subagent 平行執行：
+為避免 Axure 整本讀取浪費時間，流程拆成兩階段：先讓 Jira 整理與 Axure sitemap 讀取平行進行，再由主 agent 依 Jira 內容判斷要讀哪些 Axure 分頁，最後才實際抓內容。
 
 ---
+
+#### Step 2-1：平行收集 Jira 內容與 Axure 分頁清單
 
 **Subagent A：整理 Jira 資料**
 
@@ -123,24 +125,77 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
    ```
    使用 `mcp-atlassian:jira_get_issue_images` 或附件 URL 下載。
 
----
-
-**Subagent B：處理 Axure（僅在 Step 1 偵測到 axshare.com 連結時派出）**
+**Subagent B-sitemap：只讀 Axure 分頁清單（僅在 Step 1 偵測到 axshare.com 連結時派出）**
 
 任務：
-- 使用 `axure-to-md` skill，將 Axure 規格書轉換為 Markdown
-- 輸出存至：
+- 使用 `axure-to-md` skill 的 `mode: sitemap-only`：開啟 Axure、輸入密碼、展開左側 sitemap、把所有分頁名稱（含層級）寫入：
+  ```
+  {repo}/ra-docs/{ISSUE_KEY}/axure-sitemap.md
+  ```
+- **不要讀任何分頁內容、不要截圖**，只要拿到完整分頁清單即可
+- 傳入參數：Axure URL、密碼（若有）、repo 路徑、Jira 單號、`mode=sitemap-only`
+
+若無 Axure 連結，**不派出 Subagent B-sitemap**，跳過 Step 2-2，直接進入 Step 4。
+
+等 Subagent A 與 Subagent B-sitemap 都完成後，進入 Step 2-2。
+
+---
+
+#### Step 2-2：由主 agent 判斷需讀取的 Axure 分頁
+
+主 agent 讀取：
+1. `{repo}/ra-docs/{ISSUE_KEY}/jira.md`
+2. `{repo}/ra-docs/{ISSUE_KEY}/axure-sitemap.md`
+
+依 Jira 描述與留言中提及的頁面、功能、流程，與 sitemap 中的分頁名稱比對，產出兩份清單：
+
+- **需讀取分頁**：分頁名稱與 Jira 內容語意相關（含父層必要的上下文頁）
+- **略過分頁**：與本次修改範疇無關
+
+判斷原則：
+- 寧可多讀不要少讀；不確定時納入「需讀取」
+- 父頁面若是子頁的必要上下文（例如「booking 流程」是子頁的入口），也納入
+- Jira 沒明確提到頁名但有關鍵字（按鈕、欄位、流程名稱）→ 用關鍵字比對 sitemap 推斷
+- 名稱含「不用看」的分頁一律放入略過
+
+將兩份清單寫入：
+```
+{repo}/ra-docs/{ISSUE_KEY}/axure-pages-plan.md
+```
+
+格式：
+```markdown
+# Axure 分頁讀取計畫
+
+## 需讀取（{N} 頁）
+- 一般booking / 預約明細
+- 一般booking / 曝光管道選擇
+- ...
+
+## 略過（{M} 頁）
+- 版本紀錄（理由：與本次修改無關）
+- 舊版流程（理由：非本次範疇）
+- ...
+```
+
+**不向使用者確認**，直接進入 Step 2-3。讀取結果會在 Step 7 摘要中明確列出。
+
+---
+
+#### Step 2-3：派出 Axure 內容讀取 subagent
+
+**Subagent B-content：依清單讀取 Axure 分頁內容**
+
+任務：
+- 使用 `axure-to-md` skill 的 `mode: pages-from-list`
+- 傳入參數：Axure URL、密碼（若有）、repo 路徑、Jira 單號、`pages_file={repo}/ra-docs/{ISSUE_KEY}/axure-pages-plan.md`
+- 僅讀取「需讀取」清單中的分頁，輸出至：
   ```
   {repo}/ra-docs/{ISSUE_KEY}/spec.md
   images/ 子目錄下存放說明圖片
   ```
-- 傳入參數：Axure URL、密碼（若有）、repo 路徑、Jira 單號
 
-若無 Axure 連結，**不派出 Subagent B**，後續 Step 4 僅參考 `jira.md`。
-
----
-
-等所有 subagent 都完成後，繼續 Step 3。
+Subagent B-content 完成後，繼續 Step 3。
 
 ---
 
@@ -184,9 +239,10 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 在填充前，依序讀取以下資料（全部讀完再開始寫）：
 
 1. **`{repo}/ra-docs/{ISSUE_KEY}/jira.md`** — Jira 描述與規格留言
-2. **`{repo}/ra-docs/{ISSUE_KEY}/spec.md`**（若存在）— Axure 規格書全文
-3. **`{repo}/ra-docs/{ISSUE_KEY}/images/`** — 列出所有截圖檔名，了解有哪些 BEFORE/AFTER 對比圖可引用
-4. **`{repo}/ra-docs/{ISSUE_KEY}/files/`** — 列出所有附件檔名（例如 PDF、Excel），在規格書中標注「參考附件：{檔名}」
+2. **`{repo}/ra-docs/{ISSUE_KEY}/spec.md`**（若存在）— Axure 規格書（僅含 Step 2-2 判斷為相關的分頁）
+3. **`{repo}/ra-docs/{ISSUE_KEY}/axure-pages-plan.md`**（若存在）— 確認哪些分頁被讀取、哪些被略過，作為後續分析的範疇參考
+4. **`{repo}/ra-docs/{ISSUE_KEY}/images/`** — 列出所有截圖檔名，了解有哪些 BEFORE/AFTER 對比圖可引用
+5. **`{repo}/ra-docs/{ISSUE_KEY}/files/`** — 列出所有附件檔名（例如 PDF、Excel），在規格書中標注「參考附件：{檔名}」
 
 ```bash
 # 列出 images/ 和 files/ 內容
@@ -265,7 +321,9 @@ ls {repo}/ra-docs/{ISSUE_KEY}/files/
 📁 檔案位置
    {repo}/ra-docs/{ISSUE_KEY}/
    ├── jira.md                （Jira 描述與留言）
-   ├── spec.md                （Axure 規格，若有）
+   ├── axure-sitemap.md       （Axure 完整分頁清單，若有）
+   ├── axure-pages-plan.md    （讀取/略過判斷，若有）
+   ├── spec.md                （Axure 規格，僅含已讀分頁）
    ├── files/                 （Jira 附件）
    ├── {ISSUE_KEY}-spec.md
    └── {ISSUE_KEY}-checkList.md（僅 PO 補問清單）
@@ -274,6 +332,17 @@ ls {repo}/ra-docs/{ISSUE_KEY}/files/
    scope: {scope} | type: {type}
    填充 Section: {已填 Section 編號列表}
    ⚠️ 待確認項目: {N} 個（含 Blocker {X} 個）
+
+{若有 Axure}
+📖 Axure 分頁讀取狀況
+   ✅ 已讀取 ({N} 頁)：
+      - {分頁名稱 1}
+      - {分頁名稱 2}
+      - ...
+   ⏭️ 略過 ({M} 頁)：
+      - {分頁名稱}（理由）
+      - ...
+   ⚠️ 若發現遺漏，請告知需要補讀的分頁，將重新執行
 
 {若 Step 0A 偵測到 template 更新}
 📢 Template 有更新：{變動摘要一行}

@@ -15,6 +15,10 @@ description: 使用 playwright-cli 將 Axure prototype 規格書轉換成 Markdo
 2. **網站密碼**（若有設定）
 3. **Jira 單號**（例如 VIPOP-12345），用於決定輸出目錄名稱
 4. **repo 路徑**：輸出目錄為 `{repo}/ra-docs/{Jira單號}/`。請使用者提供 ` repo 的本機路徑（例如 `/Users/yourname/projects/104.vip.f2e.recruitment`）。
+5. **mode**（可選，預設 `full`）：
+   - `full`：讀取所有非「不用看」的分頁，輸出完整 `spec.md`（原始行為）
+   - `sitemap-only`：**只**展開並輸出分頁清單至 `axure-sitemap.md`，不讀任何頁面內容、不截圖
+   - `pages-from-list`：依傳入的 `pages_file`（Markdown 檔，「## 需讀取」區塊下的條列項目即分頁名稱清單），**只讀清單中的分頁**，輸出 `spec.md`
 
 輸出目錄結構：
 
@@ -67,6 +71,27 @@ Axure Share 左側有頁面樹狀清單（sitemap panel）。
 3. 展開所有可展開的群組以取得完整清單
 4. **略過條件**：分頁名稱包含「不用看」者，連同其所有子頁面一起略過
 5. 記錄需要讀取的分頁順序清單（含層級資訊）
+
+### 依 mode 決定後續行為
+
+- **`mode=full`（預設）**：拿完整清單後繼續「逐頁讀取規格」段落。
+- **`mode=sitemap-only`**：將完整清單寫入 `{repo}/ra-docs/{Jira單號}/axure-sitemap.md` 後，**直接跳到「結束後關閉瀏覽器」**，不執行後續逐頁讀取與截圖。
+  ```markdown
+  # Axure Sitemap
+
+  > 來源：[Axure 網址]
+
+  - 一般booking
+    - 預約明細
+    - 曝光管道選擇
+  - 版本紀錄
+  - ...
+  ```
+  以縮排條列呈現層級。含「不用看」的分頁仍要列出，但在名稱後標註 `（略過：不用看）`。
+- **`mode=pages-from-list`**：讀取傳入的 `pages_file`，解析「## 需讀取」區塊下的條列項目作為目標清單，並與 sitemap 比對：
+  - 完全相符 → 列入讀取目標
+  - 找不到對應分頁 → 在輸出最後一段「⚠️ 清單中以下分頁未在 sitemap 找到：...」標明，繼續讀其他項目
+  - 不在清單中的分頁一律跳過（不需重新詢問）
 
 ## 逐頁讀取規格
 
@@ -248,12 +273,14 @@ playwright-cli eval "(() => { const img = new Image(); img.src = 'file://{檔名
 
 ## 儲存輸出
 
-將完整 Markdown 內容寫入 `{repo}/ra-docs/{Jira單號}/spec.md`，並告知使用者：
+依 mode 不同：
 
-- 輸出目錄的完整路徑
-- 共轉換了幾個分頁
-- 共儲存了幾張說明圖片（列出檔名）
-- 若有略過「不用看」的分頁，列出被略過的名稱
+- **`mode=sitemap-only`**：僅輸出 `{repo}/ra-docs/{Jira單號}/axure-sitemap.md`，告知使用者「sitemap 已輸出，共 N 個分頁」。
+- **`mode=full` / `mode=pages-from-list`**：將完整 Markdown 內容寫入 `{repo}/ra-docs/{Jira單號}/spec.md`，並告知使用者：
+  - 輸出目錄的完整路徑
+  - 共轉換了幾個分頁（`pages-from-list` 模式另列出實際讀到 vs. 清單未匹配的分頁）
+  - 共儲存了幾張說明圖片（列出檔名）
+  - 若有略過「不用看」的分頁，列出被略過的名稱
 
 ## 結束後關閉瀏覽器
 
