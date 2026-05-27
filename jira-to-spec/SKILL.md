@@ -7,7 +7,7 @@ description: >
   自動透過 Atlassian MCP 讀取 Jira 任務內容，結合規格書標準模板，
   產出規格書 Markdown 與 HTML 檔案至 {repo}/ra-docs/{ISSUE_KEY}/。
   注意：若使用者只說「分析 VIPOP-XXXXX」而未提及規格書/spec，應觸發 jira-analyzer 而非此 skill。
-compatibility: "需要 Atlassian MCP、filesystem MCP；若有 Axure 連結則需要 axure-to-md skill；若有 Confluence 連結則需要 confluence-to-md skill"
+compatibility: "需要 Atlassian MCP、filesystem MCP；Axure / Confluence 規格皆以 PDF 為主要知識庫（不再使用 axure-to-md / playwright）；若使用者不提供 Confluence PDF 則 fallback 至 confluence-to-md skill"
 ---
 
 # Jira to Spec — 從 Jira Ticket 產出規格書
@@ -96,58 +96,72 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 1. **Confluence 連結**：包含 `104corp.atlassian.net/wiki/` 的 URL
 2. **Axure 連結**：包含 `axshare.com` 的 URL
 
-依偵測結果分流（**Confluence 優先**）：
+依偵測結果分流（**一次詢問使用者提供 PDF**）：
 
 | Confluence | Axure | 流程 |
 |------------|-------|------|
-| 有 | 無 | Confluence-only：進入 Step 1A |
-| 無 | 有 | Axure-only：進入 Step 1B |
-| 有 | 有 | Confluence 為主，但詢問使用者是否也讀 Axure：進入 Step 1A，依使用者回覆決定是否再走 Step 1B |
-| 無 | 無 | 跳過 Step 1A / 1B，直接進入 Step 2 |
+| 有 | 無 | Confluence-only：進入 Step 1A 收 Confluence PDF |
+| 無 | 有 | Axure-only：進入 Step 1A 收 Axure PDF |
+| 有 | 有 | 兩者並存：進入 Step 1A 一次收兩份 PDF |
+| 無 | 無 | 跳過 Step 1A，直接進入 Step 2 |
 
 ---
 
-**Step 1A：確認 Confluence 來源（僅在偵測到 Confluence 連結時執行）**
+**Step 1A：一次詢問使用者提供規格 PDF（僅在偵測到外部連結時執行）**
 
-- 紀錄完整 Confluence URL 清單（可能有多個）。
-- **若同時偵測到 Axure**，向使用者詢問：
+向使用者一次詢問所有偵測到的外部規格 PDF，避免來回多輪互動。
 
-  > 「偵測到 Confluence 規格：`{confluence_url}`
-  > 同時也有 Axure 連結：`{axure_url}`
-  > 預設以 Confluence 為主要規格來源。是否也需要讀取 Axure 內容作為補充？(y/N)」
+詢問模板（依情境組合）：
 
-  - 使用者選 **是** → 繼續執行 Step 1B（取得 Axure 密碼）
-  - 使用者選 **否** → 跳過 Step 1B，直接進入 Step 2
+> 「偵測到以下外部規格來源：
+> {若有 Confluence}- Confluence：`{confluence_url}`（建議提供 **Confluence PDF**）
+> {若有 Axure}- Axure：`{axure_url}`（請提供 **Axure PDF**）
+>
+> ⚠️ **Confluence PDF 強烈建議提供**：因 Atlassian Cloud API 限制，
+> 直接讀取 Confluence 將無法取得頁面上的圖片，Agent 看不到圖會導致規格遺失。
+> 提供 PDF 可確保完整解析（文字 + 圖片）。
+>
+> ⚠️ **Axure**：本流程不再使用 playwright 爬取線上 Axure，
+> 請提供 Axure 匯出的 PDF 作為知識庫。
+>
+> 請提供 PDF 的本機絕對路徑（或回覆「無」）：
+> - Confluence PDF：________
+> - Axure PDF：________」
 
-- 若只有 Confluence（沒有 Axure），不需詢問，直接進入 Step 2。
+依使用者回覆分四種狀況：
+
+1. **提供 Confluence PDF** → 複製到 `{repo}/ra-docs/{ISSUE_KEY}/files/confluence-spec.pdf`
+2. **提供 Axure PDF** → 複製到 `{repo}/ra-docs/{ISSUE_KEY}/files/axure-spec.pdf`
+3. **Confluence 連結存在但未提供 PDF** → 二次確認：
+
+   > 「未提供 Confluence PDF。
+   > 因 Atlassian Cloud 限制，直接抓取的 Confluence 內容**不含圖片**，
+   > Agent 無法感知圖片內容，可能導致規格遺失。
+   > 是否仍要繼續使用 API 抓取（fallback 至 confluence-to-md）？(y/N)」
+
+   - 選 **是** → 標記 `confluence_fallback=true`，Step 2 將呼叫 `confluence-to-md`
+   - 選 **否** → 中止流程，提示使用者準備 PDF 後重試
+
+4. **Axure 連結存在但未提供 PDF** → 標記 `axure_skip=true`，Step 2 不處理 Axure（規格書僅參考 Jira / Confluence）
+
+收到使用者回覆後才繼續 Step 2。
 
 ---
 
-**Step 1B：詢問 Axure 密碼（僅在需要讀取 Axure 時執行）**
+### Step 2：派出 subagent 收集規格來源
 
-在繼續之前，**先暫停詢問使用者**：
+流程改為單階段派出 subagent，依 Step 1 收到的 PDF 與選項決定要不要派 B / C。
+**Axure 與 Confluence 都以 PDF 為主要知識來源，不再透過 playwright 線上爬取。**
 
-> 「準備讀取 Axure 規格書：`{axure_url}`
-> 請問這份 Axure 是否有設定存取密碼？有的話請提供。」
-
-收到密碼（或確認無密碼）後，才繼續執行 Step 2。
-
----
-
-### Step 2：兩階段派出 subagent
-
-流程拆成兩階段：先讓 Jira 整理與外部規格（Axure / Confluence）的清單讀取平行進行，再由主 agent 依 Jira 內容判斷要讀哪些分頁，最後才實際抓內容。
-
-**外部規格分流提醒**（依 Step 1 偵測結果）：
-- 純 Confluence → 跑 Subagent C
-- 純 Axure → 跑 Subagent B-sitemap
-- Confluence + Axure 且使用者選擇兩邊都讀 → 兩者並行（C 與 B-sitemap 同時派出）
-- Confluence + Axure 但使用者只要 Confluence → 僅跑 Subagent C
+**外部規格分流提醒**（依 Step 1 結果）：
+- 純 Confluence（有 PDF）→ 跑 Subagent C-pdf
+- 純 Confluence（無 PDF，使用者選擇 fallback）→ 跑 Subagent C-api
+- 純 Axure（有 PDF）→ 跑 Subagent B-pdf
+- 純 Axure（無 PDF）→ 略過 Axure，僅跑 Subagent A
+- Confluence + Axure → 依各自 PDF 提供狀況分別派出
 - 兩者皆無 → 只跑 Subagent A
 
 ---
-
-#### Step 2-1：平行收集 Jira 內容、Confluence 規格與 Axure 分頁清單
 
 **Subagent A：整理 Jira 資料**
 
@@ -174,142 +188,70 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
    ```
    使用 `mcp-atlassian:jira_get_issue_images` 或附件 URL 下載。
 
-**Subagent B-sitemap：只讀 Axure 分頁清單（僅在需要讀取 Axure 時派出）**
+---
+
+**Subagent B-pdf：以 Axure PDF 作為知識庫（取代原本 playwright 爬取）**
+
+僅在 Step 1A 收到 Axure PDF 時派出。
 
 任務：
-- 使用 `axure-to-md` skill 的 `mode: sitemap-only`：開啟 Axure、輸入密碼、展開左側 sitemap、把所有分頁名稱（含層級）寫入：
-  ```
-  {repo}/ra-docs/{ISSUE_KEY}/axure-sitemap.md
-  ```
-- **不要讀任何分頁內容、不要截圖**，只要拿到完整分頁清單即可
-- 傳入參數：Axure URL、密碼（若有）、repo 路徑、Jira 單號、`mode=sitemap-only`
+1. 確認 PDF 位置：`{repo}/ra-docs/{ISSUE_KEY}/files/axure-spec.pdf`（Step 1A 已複製進來）
+2. **不轉成 Markdown、不寫 spec.md**，PDF 本身即為知識庫
+3. 用 Read tool 對 PDF 做一次完整掃讀（可分頁讀取），產出索引檔：
+   ```
+   {repo}/ra-docs/{ISSUE_KEY}/axure-pdf-index.md
+   ```
+   內容為 PDF 章節 / 頁碼 / 主題對照表，方便 Step 4 主 agent 快速定位：
+   ```markdown
+   # Axure PDF 索引
 
-**Subagent C：讀取 Confluence 規格（僅在偵測到 Confluence 連結時派出）**
+   > 來源：files/axure-spec.pdf
+
+   | 頁碼 | 章節 / 主題 | 摘要（30 字內） |
+   |------|------------|----------------|
+   | 1-3 | 封面 / 版本紀錄 | ... |
+   | 4-12 | 一般 booking 流程 | ... |
+   ```
+4. Step 4 主 agent 會視需要直接 Read PDF 指定頁面，不需要產出完整 spec.md。
+
+---
+
+**Subagent C-pdf：以 Confluence PDF 作為知識庫**
+
+僅在 Step 1A 收到 Confluence PDF 時派出。
 
 任務：
-- 使用 `confluence-to-md` skill 的 `mode: full`，傳入：
-  - Confluence URL、repo 路徑、Jira 單號
-- 該 skill 會自動：
-  - 解析 pageId、取得 cloudId
-  - 讀主頁 + 全部子頁（依使用者於 Step 1 的設定，預設全抓）
-  - 嘗試下載頁面附件與圖片，分流至 `images/` 與 `files/`（多半失敗，Atlassian Cloud 限制）
+1. 確認 PDF 位置：`{repo}/ra-docs/{ISSUE_KEY}/files/confluence-spec.pdf`
+2. **不轉成 Markdown、不寫 confluence-spec.md**，PDF 本身即為知識庫
+3. 同 Subagent B-pdf，產出 PDF 索引：
+   ```
+   {repo}/ra-docs/{ISSUE_KEY}/confluence-pdf-index.md
+   ```
+4. Step 4 主 agent 會視需要直接 Read PDF 指定頁面。
+
+---
+
+**Subagent C-api：fallback 至 confluence-to-md（僅使用者堅持不提供 Confluence PDF 時派出）**
+
+任務：
+- 呼叫 `confluence-to-md` skill 的 `mode: full`，傳入 Confluence URL、repo 路徑、Jira 單號
+- 該 skill 會：解析 pageId、取得 cloudId、讀主頁 + 全部子頁、嘗試下載附件與圖片（**多半失敗**，Atlassian Cloud 限制）
 - 輸出檔：
   ```
-  {repo}/ra-docs/{ISSUE_KEY}/spec.md                       # Confluence 為主規格時直接寫入這裡
+  {repo}/ra-docs/{ISSUE_KEY}/confluence-spec.md
   {repo}/ra-docs/{ISSUE_KEY}/confluence-sitemap.md
-  {repo}/ra-docs/{ISSUE_KEY}/confluence-attachment-manifest.md  # 詳見下方
-  {repo}/ra-docs/{ISSUE_KEY}/images/
-  {repo}/ra-docs/{ISSUE_KEY}/files/
+  {repo}/ra-docs/{ISSUE_KEY}/confluence-attachment-manifest.md
+  {repo}/ra-docs/{ISSUE_KEY}/images/    （多半為空，需使用者手動補）
   ```
-- **若同時也要讀 Axure**（兩者並存的情境）：
-  - Confluence 輸出到 `confluence-spec.md`（而非 `spec.md`），避免被 Axure 蓋掉
-  - 傳入額外參數 `output_filename=confluence-spec.md`
-  - Axure 仍輸出至 `spec.md`（Step 2-3 之後）
+- `confluence-spec.md` 即為知識庫，Step 4 主 agent 會 Read 它
 
-**[新增] Subagent C 必須產出 `confluence-attachment-manifest.md`**
-
-由於 Atlassian Cloud 不允許 API Token 下載 Confluence 附件 binary（已實測確認），使用者需手動下載。為了讓使用者快速找到所有圖片，Subagent C 在抓完每個頁面的 ADF body 後，將所有 `media` 節點彙整成這份 manifest。
-
-manifest 格式（必須遵守）：
-
-```markdown
-# Confluence 附件清單
-
-> 由於 Atlassian Cloud 限制，Confluence 附件無法經由 API Token 自動下載。
-> 請在瀏覽器點開頁面連結 → 找到對應圖片 → 右鍵另存到 `images/` 目錄。
-
-## {頁面標題 1} (id: {pageId})
-
-🔗 頁面連結：{webuiLink absolute URL}
-
-| # | 建議檔名 | 描述（從 alt 或前後文推斷） | 尺寸 |
-|---|---------|--------------------------|------|
-| 1 | {filename} | {alt 或前後段落文字 50 字內} | {width}×{height} |
-| 2 | ... | ... | ... |
-
-## {頁面標題 2} (id: {pageId})
-
-...
-```
-
-擷取規則：
-1. 從 ADF body 找出所有 `type: media` 節點，取 `id`、`alt`、`width`、`height`、`collection`
-2. 建議檔名：優先用 `alt`（多半就是原檔名），若 alt 是無意義字串（如 image-yyyymmdd-hhmmss）就**根據圖片在頁面內的位置**生成更有意義的名字（例如「{頁面標題}-{第N張}.png」）
-3. 描述：取 media 節點**前面最近的 paragraph / heading 文字**作為情境（最多 50 字）。若 media 內嵌於 `table` cell，描述加註「（表格內）」
-4. 圖片過小（width < 100 且 height < 100）視為 icon，標註 `🔸 (icon)`，可略過下載
-5. 頁面內若無 media 節點，不要為該頁面建立 section
-
-頁面連結：
-- 用 page 物件回傳的 `webUrl` 或 `_links.webui`，組合 cloudId 站台前綴
-- 範例：`https://104corp.atlassian.net/wiki/spaces/Bteam/pages/39354370`
-
-若無 Confluence 連結，**不派出 Subagent C**；若無 Axure 連結，**不派出 Subagent B-sitemap**。
-
-若 Step 1 偵測到的外部規格全為 Confluence（沒有 Axure），Subagent C 完成即可，**跳過 Step 2-2 / 2-3**，直接進入 Step 3。
-
-等所有派出的 subagent 都完成後，依情境決定下一步：
-- 有 Axure → 進入 Step 2-2
-- 只有 Confluence 或都沒有 → 直接進入 Step 3
+`confluence-attachment-manifest.md` 列出所有頁面內 `media` 節點清單（含建議檔名、所在頁面、前後文描述、尺寸），讓使用者手動到 Confluence 點開圖片右鍵另存到 `images/`。詳細格式由 `confluence-to-md` skill 自行產生，不在本檔重複定義。
 
 ---
 
-#### Step 2-2：由主 agent 判斷需讀取的 Axure 分頁
+所有派出的 subagent 完成後，**直接進入 Step 3**。
 
-> **僅在需要讀取 Axure 時執行**。若使用者於 Step 1 選擇不讀 Axure，跳過本步驟。
-
-主 agent 讀取：
-1. `{repo}/ra-docs/{ISSUE_KEY}/jira.md`
-2. `{repo}/ra-docs/{ISSUE_KEY}/axure-sitemap.md`
-
-依 Jira 描述與留言中提及的頁面、功能、流程，與 sitemap 中的分頁名稱比對，產出兩份清單：
-
-- **需讀取分頁**：分頁名稱與 Jira 內容語意相關（含父層必要的上下文頁）
-- **略過分頁**：與本次修改範疇無關
-
-判斷原則：
-- 寧可多讀不要少讀；不確定時納入「需讀取」
-- 父頁面若是子頁的必要上下文（例如「booking 流程」是子頁的入口），也納入
-- Jira 沒明確提到頁名但有關鍵字（按鈕、欄位、流程名稱）→ 用關鍵字比對 sitemap 推斷
-- 名稱含「不用看」的分頁一律放入略過
-
-將兩份清單寫入：
-```
-{repo}/ra-docs/{ISSUE_KEY}/axure-pages-plan.md
-```
-
-格式：
-```markdown
-# Axure 分頁讀取計畫
-
-## 需讀取（{N} 頁）
-- 一般booking / 預約明細
-- 一般booking / 曝光管道選擇
-- ...
-
-## 略過（{M} 頁）
-- 版本紀錄（理由：與本次修改無關）
-- 舊版流程（理由：非本次範疇）
-- ...
-```
-
-**不向使用者確認**，直接進入 Step 2-3。讀取結果會在 Step 7 摘要中明確列出。
-
----
-
-#### Step 2-3：派出 Axure 內容讀取 subagent
-
-**Subagent B-content：依清單讀取 Axure 分頁內容**
-
-任務：
-- 使用 `axure-to-md` skill 的 `mode: pages-from-list`
-- 傳入參數：Axure URL、密碼（若有）、repo 路徑、Jira 單號、`pages_file={repo}/ra-docs/{ISSUE_KEY}/axure-pages-plan.md`
-- 僅讀取「需讀取」清單中的分頁，輸出至：
-  ```
-  {repo}/ra-docs/{ISSUE_KEY}/spec.md
-  images/ 子目錄下存放說明圖片
-  ```
-
-Subagent B-content 完成後，繼續 Step 3。
+> 原本的 Step 2-2 / 2-3（Axure sitemap 比對與分頁挑選）已移除——Axure 不再透過 playwright 線上爬取，改用 PDF 知識庫，不需要再做分頁選擇。
 
 ---
 
@@ -429,12 +371,13 @@ sub_specs:
 在填充前，依序讀取以下資料（全部讀完再開始寫）：
 
 1. **`{repo}/ra-docs/{ISSUE_KEY}/jira.md`** — Jira 描述與規格留言
-2. **`{repo}/ra-docs/{ISSUE_KEY}/spec.md`**（若存在）— 外部規格（Axure 或 Confluence，視 Step 1 偵測結果）
-3. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-spec.md`**（若存在）— Confluence 輔助規格（僅在 Confluence + Axure 並存且使用者選擇兩邊都讀的情境出現）
-4. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-sitemap.md`**（若存在）— Confluence 頁面樹清單
-5. **`{repo}/ra-docs/{ISSUE_KEY}/axure-pages-plan.md`**（若存在）— 確認哪些 Axure 分頁被讀取、哪些被略過
-6. **`{repo}/ra-docs/{ISSUE_KEY}/images/`** — 列出所有圖片檔名（含 BEFORE/AFTER、Confluence 內嵌圖片）
-7. **`{repo}/ra-docs/{ISSUE_KEY}/files/`** — 列出所有附件檔名（PDF、Excel 等）
+2. **`{repo}/ra-docs/{ISSUE_KEY}/files/confluence-spec.pdf`**（若存在）— Confluence PDF，**主要規格來源**。用 Read tool 帶 `pages` 參數依需求讀指定頁
+3. **`{repo}/ra-docs/{ISSUE_KEY}/files/axure-spec.pdf`**（若存在）— Axure PDF，**主要規格來源**。用 Read tool 帶 `pages` 參數依需求讀指定頁
+4. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-pdf-index.md`** / **`axure-pdf-index.md`**（若存在）— 由 Subagent B-pdf / C-pdf 產出的 PDF 章節頁碼索引，用來決定要 Read PDF 的哪幾頁
+5. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-spec.md`**（若存在）— **僅 fallback 情境**才會有：使用者堅持不提供 Confluence PDF、改走 confluence-to-md 時的產物
+6. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-sitemap.md`** / **`confluence-attachment-manifest.md`**（若存在，fallback 情境用）— Confluence 頁面樹與待手動下載的圖片清單
+7. **`{repo}/ra-docs/{ISSUE_KEY}/images/`** — 列出所有圖片檔名
+8. **`{repo}/ra-docs/{ISSUE_KEY}/files/`** — 列出所有附件檔名（含上述 PDF）
 
 ```bash
 # 列出 images/ 和 files/ 內容
@@ -442,10 +385,17 @@ ls {repo}/ra-docs/{ISSUE_KEY}/images/
 ls {repo}/ra-docs/{ISSUE_KEY}/files/
 ```
 
-**來源優先順序**（依 Step 1 偵測結果）：
-- 純 Confluence → `spec.md`（Confluence 轉出）為主，`jira.md` 補充
-- 純 Axure → `spec.md`（Axure 轉出）為主，`jira.md` 補充
-- Confluence + Axure（兩邊都讀）→ `spec.md`（Axure）+ `confluence-spec.md`（Confluence）並列為主要規格，遇到衝突時以 **Confluence 為準**，並在規格書內以 `📝 註：Axure 與 Confluence 描述不一致，本處採 Confluence` 標注
+**讀取 PDF 的策略**：
+- PDF 多半超過 10 頁，**不可一次全讀**（會失敗或太貴）
+- 先讀對應的 `*-pdf-index.md` 確認章節頁碼
+- 依 Jira 內容找出相關主題，用 Read tool 的 `pages` 參數每次讀 5–20 頁
+- 同一份 PDF 可分多次讀，但要避免重複讀同一段
+
+**來源優先順序**（依 Step 1 結果）：
+- 有 Confluence PDF → 以 Confluence PDF 為主要規格，`jira.md` 補充
+- 有 Axure PDF → 以 Axure PDF 為主要規格，`jira.md` 補充
+- 兩份 PDF 都有 → 並列為主要規格；遇到衝突時以 **Confluence 為準**，並在規格書內標注 `📝 註：Axure 與 Confluence 描述不一致，本處採 Confluence`
+- 只有 `confluence-spec.md`（fallback 情境）→ 以該檔為主要規格，但需在 Step 7 摘要中提示「Confluence 圖片可能缺失，請對照 confluence-attachment-manifest.md 補圖」
 - 都沒有 → 僅參考 `jira.md`
 
 **Step 4B：填充規格書**
@@ -701,40 +651,34 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
 📁 檔案位置
    {repo}/ra-docs/{ISSUE_KEY}/
    ├── jira.md                            （Jira 描述與留言）
-   ├── confluence-sitemap.md              （Confluence 頁面樹，若有）
-   ├── confluence-attachment-manifest.md  （Confluence 圖片清單與下載連結，若有）
-   ├── axure-sitemap.md                   （Axure 完整分頁清單，若有）
-   ├── axure-pages-plan.md                （Axure 讀取/略過判斷，若有）
-   ├── spec.md                            （主要外部規格：Confluence 或 Axure）
-   ├── confluence-spec.md                 （Confluence 輔助規格，僅雙來源並讀時出現）
-   ├── images/                            （圖片：Axure 截圖 + Confluence 內嵌圖）
-   ├── files/                             （Jira / Confluence 附件）
+   ├── confluence-pdf-index.md            （Confluence PDF 索引，若有 PDF）
+   ├── axure-pdf-index.md                 （Axure PDF 索引，若有 PDF）
+   ├── confluence-spec.md                 （Confluence fallback 規格，僅無 PDF 時出現）
+   ├── confluence-sitemap.md              （Confluence 頁面樹，fallback 情境）
+   ├── confluence-attachment-manifest.md  （Confluence 圖片清單，fallback 情境）
+   ├── images/                            （圖片：手動補入或 Jira 附件）
+   ├── files/                             （Jira 附件 + Confluence/Axure PDF）
    ├── {ISSUE_KEY}-spec.md
-   └── {ISSUE_KEY}-checkList.md（僅 PO 補問清單）
+   └── {ISSUE_KEY}-checkList.md           （僅 PO 補問清單）
 
 📊 規格書摘要
    scope: {scope} | type: {type}
-   外部規格來源: {Confluence / Axure / Confluence+Axure / 無}
+   外部規格來源: {Confluence PDF / Axure PDF / Confluence PDF+Axure PDF / Confluence (fallback) / 無}
    填充 Section: {已填 Section 編號列表}
    ⚠️ 待確認項目: {N} 個（含 Blocker {X} 個）
 
-{若有 Confluence}
-📘 Confluence 讀取狀況
-   ✅ 已讀取 ({N} 頁)：
-      - {主頁標題}
-      - {子頁標題}
-      - ...
+{若有 Confluence PDF}
+📘 Confluence PDF：files/confluence-spec.pdf （{N} 頁）
+   實際參考頁碼：{p.X–Y, p.Z–W ...}
 
-{若有 Axure}
-📖 Axure 分頁讀取狀況
-   ✅ 已讀取 ({N} 頁)：
-      - {分頁名稱 1}
-      - {分頁名稱 2}
-      - ...
-   ⏭️ 略過 ({M} 頁)：
-      - {分頁名稱}（理由）
-      - ...
-   ⚠️ 若發現遺漏，請告知需要補讀的分頁，將重新執行
+{若有 Axure PDF}
+📖 Axure PDF：files/axure-spec.pdf （{N} 頁）
+   實際參考頁碼：{p.X–Y, p.Z–W ...}
+
+{若 Confluence 走 fallback (無 PDF)}
+⚠️ Confluence 走 API fallback
+   圖片可能缺失，請對照 confluence-attachment-manifest.md 手動補圖到 images/
+   補完後可請我重跑 Step 4 重新填充規格書
 
 🔴 Blocker 摘要(需優先回答)
    {逐條列出 Blocker 問題,最多顯示 3 條}
