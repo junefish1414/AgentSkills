@@ -35,6 +35,7 @@ Step 2:平行派出 subagent
 Step 3:判斷需求類型與情境組合
   ├─ 3-3A 單一情境 → Step 4B-1 → Step 5A → Step 6A
   └─ 3-3B 複合情境 → Step 4B-2 + 4C → Step 5B → Step 6B
+Step 6.5:詢問是否產出 PO 友善 HTML(每次必問)
 Step 7:對話輸出摘要
 ```
 
@@ -636,6 +637,23 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
 - 申請 token：https://id.atlassian.com/manage-profile/security/api-tokens
 - token 風險：等同帳號全權限，外洩會危及整個 104 內部資料
 - 腳本走 curl + Basic Auth，token 不持久化，read -s 不入 history
+### Step 6.5：詢問是否產出 PO 友善 HTML
+
+完成 .md 寫入後,**每次都要主動詢問使用者**:
+
+> 「規格書 .md 已產出。是否要同時產出 PO 友善的 HTML 版本(可勾選 + 一鍵複製回 Jira)?」
+>
+> - **要** → 呼叫 `spec-md-to-po-html` skill,傳入 `{ISSUE_KEY}` 與 `{repo}`,流程接續
+> - **不要** → 直接進入 Step 7 對話輸出摘要
+
+呼叫 `spec-md-to-po-html` 時的傳遞:
+- 不需要重新詢問 ISSUE_KEY / repo 路徑,沿用本次執行的值
+- 該 skill 完成後會回傳 `html/` 目錄下的檔案列表,作為 Step 7 摘要的補充內容
+
+**注意**:
+- HTML 化是**選用**步驟,不強制執行;使用者明確說「不要」就跳過
+- 若 `spec-md-to-po-html` 執行失敗,**不要回滾 .md 產物**,只在 Step 7 摘要中註記 HTML 化失敗即可
+- 若使用者觸發語句已含「不要 HTML」「只要 md」等字眼,直接跳過此步驟,不再詢問
 
 ---
 
@@ -726,6 +744,32 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
    {逐條列出 Blocker 問題,最多顯示 3 條,每條標註所屬子 spec}
 ```
 
+#### 7C：HTML 補充摘要(僅在 Step 6.5 使用者選擇要產出 HTML 時加上)
+
+在 7A / 7B 摘要末尾追加:
+
+```
+🎨 PO 友善 HTML 已產出
+   {repo}/ra-docs/{ISSUE_KEY}/html/
+   ├── index.html        ← PO 從這裡開始(複合情境)
+   ├── checkList.html    ← 互動式補問清單,可勾選 + 一鍵複製回 Jira
+   ├── spec.html / NN-{topic}.spec.html
+   ...
+
+💡 給 PO 的話術:
+   「{ISSUE_KEY} 的補問清單在 ra-docs/{ISSUE_KEY}/html/checkList.html,
+    勾完選項按下方『複製 Jira 回覆格式』,把內容貼回這張票的 comment 即可。」
+```
+
+若 HTML 化失敗,改為:
+
+```
+⚠️ HTML 化失敗
+   .md 檔案已正常產出可使用,HTML 步驟未完成。
+   失敗原因:{錯誤訊息}
+   可用以下指令重試:「{ISSUE_KEY} HTML 化」
+```
+
 ---
 
 ## 注意事項
@@ -736,6 +780,8 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
 - Bug 類型 ticket → 提示「建議改用 jira-analyzer 分析」
 - 複合情境的拆分以 (scope, type) 組合為依據,**不需要使用者確認**,直接執行
 - 若使用者想要強制合併為單一 spec,可在觸發語句加上「合併產出」或「一份 spec」
+- **HTML 化是選用步驟**:Step 6.5 每次主動詢問,使用者明確說「不要」則跳過;觸發語句已含「不要 HTML」「只要 md」也跳過
+- HTML 產出失敗**不影響 .md 可用性**,後者已是完整交付物
 
 ---
 
