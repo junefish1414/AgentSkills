@@ -27,8 +27,8 @@ compatibility: "需要 Atlassian MCP、filesystem MCP；Axure / Confluence 規�
 Step 0:收集資訊與前置作業
 Step 1:取得 Jira 任務資料(+ Axure 偵測)
 Step 2:平行派出 subagent
-  ├─ Subagent A → 產出 jira.md + files/
-  └─ Subagent B → 產出 spec.md + images/(僅在有 Axure 時)
+  ├─ Subagent A → 產出 jira.md
+  └─ Subagent B/C → 產出 PDF 索引(僅在有 PDF 時)
                           ↓
                     【資料庫快照建立完成】
                           ↓
@@ -59,7 +59,6 @@ Step 7:對話輸出摘要
 
 ```bash
 rm -rf {repo}/ra-docs/{ISSUE_KEY}
-mkdir -p {repo}/ra-docs/{ISSUE_KEY}/images
 mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 ```
 
@@ -69,7 +68,7 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 
 用 filesystem MCP 讀取 `{SKILL_REPO}/jira-to-spec/references/template.md`：
 - 成功 → 作為規格書結構
-- 失敗 → 使用本檔末尾「內建備用模板」，並告知使用者
+- 失敗 → **中止流程**，告知使用者 template.md 讀取失敗（含嘗試的路徑），請修復後重試
 
 ---
 
@@ -80,14 +79,13 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 參數：
   issue_key: "{ISSUE_KEY}"
   fields: "summary,description,issuetype,status,priority,assignee,reporter,
-           labels,duedate,subtasks,issuelinks,parent,comment,attachment"
+           labels,duedate,subtasks,issuelinks,parent,comment"
   comment_limit: 20
 ```
 
 解析重點：
 - `description`：主要規格來源
 - `comment`：含「改為」「調整」「要補做」的留言視為規格補充，一併納入
-- `attachment`：下載所有 Jira 附件，存至 `{repo}/ra-docs/{ISSUE_KEY}/files/`
 - `subtasks`：列出子任務清單，納入影響範圍
 
 **偵測外部規格連結（在 description 與所有 comment 中搜尋）**：
@@ -143,7 +141,7 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
    - 選 **是** → 標記 `confluence_fallback=true`，Step 2 將呼叫 `confluence-to-md`
    - 選 **否** → 中止流程，提示使用者準備 PDF 後重試
 
-4. **Axure 連結存在但未提供 PDF** → 標記 `axure_skip=true`，Step 2 不處理 Axure（規格書僅參考 Jira / Confluence）
+4. **Axure 連結存在但未提供 PDF** → 標記 `axure_skip=true`，Step 2 不處理 Axure（規格書僅參考 Jira / Confluence）。不需二次確認，但 Step 7 摘要**必須**輸出 Axure 缺漏警示
 
 收到使用者回覆後才繼續 Step 2。
 
@@ -182,12 +180,6 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
    ### {留言作者} ({留言時間})
    {留言內容}
    ```
-
-2. 下載所有 Jira 附件，存至：
-   ```
-   {repo}/ra-docs/{ISSUE_KEY}/files/
-   ```
-   使用 `mcp-atlassian:jira_get_issue_images` 或附件 URL 下載。
 
 ---
 
@@ -241,12 +233,8 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
   ```
   {repo}/ra-docs/{ISSUE_KEY}/confluence-spec.md
   {repo}/ra-docs/{ISSUE_KEY}/confluence-sitemap.md
-  {repo}/ra-docs/{ISSUE_KEY}/confluence-attachment-manifest.md
-  {repo}/ra-docs/{ISSUE_KEY}/images/    （多半為空，需使用者手動補）
   ```
 - `confluence-spec.md` 即為知識庫，Step 4 主 agent 會 Read 它
-
-`confluence-attachment-manifest.md` 列出所有頁面內 `media` 節點清單（含建議檔名、所在頁面、前後文描述、尺寸），讓使用者手動到 Confluence 點開圖片右鍵另存到 `images/`。詳細格式由 `confluence-to-md` skill 自行產生，不在本檔重複定義。
 
 ---
 
@@ -258,11 +246,11 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 
 ### Step 3:判斷需求類型與情境組合
 
-**輸入**:`{repo}/ra-docs/{ISSUE_KEY}/jira.md`(若有 `spec.md` 也一併參考)
+**輸入**:`{repo}/ra-docs/{ISSUE_KEY}/jira.md`(若有 `*-pdf-index.md` 或 `confluence-spec.md` 也一併參考)
 
 #### 3-1:抽取改動單元(change units)
 
-從 jira.md 和 spec.md 中識別所有獨立的改動點,每個改動點記錄:
+從 jira.md 和外部規格來源(PDF 索引 / confluence-spec.md)中識別所有獨立的改動點,每個改動點記錄:
 
 ```yaml
 change_units:
@@ -273,7 +261,7 @@ change_units:
     summary: <一句話描述這個改動>
     source_refs:
       - jira.md#<段落或留言錨點>
-      - spec.md#<頁面或區段錨點>
+      - files/{confluence|axure}-spec.pdf#p.<頁碼>   # 或 confluence-spec.md#<區段錨點>（fallback 情境）
 ```
 
 **scope 判斷:**
@@ -376,13 +364,11 @@ sub_specs:
 3. **`{repo}/ra-docs/{ISSUE_KEY}/files/axure-spec.pdf`**（若存在）— Axure PDF，**主要規格來源**。用 Read tool 帶 `pages` 參數依需求讀指定頁
 4. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-pdf-index.md`** / **`axure-pdf-index.md`**（若存在）— 由 Subagent B-pdf / C-pdf 產出的 PDF 章節頁碼索引，用來決定要 Read PDF 的哪幾頁
 5. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-spec.md`**（若存在）— **僅 fallback 情境**才會有：使用者堅持不提供 Confluence PDF、改走 confluence-to-md 時的產物
-6. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-sitemap.md`** / **`confluence-attachment-manifest.md`**（若存在，fallback 情境用）— Confluence 頁面樹與待手動下載的圖片清單
-7. **`{repo}/ra-docs/{ISSUE_KEY}/images/`** — 列出所有圖片檔名
-8. **`{repo}/ra-docs/{ISSUE_KEY}/files/`** — 列出所有附件檔名（含上述 PDF）
+6. **`{repo}/ra-docs/{ISSUE_KEY}/confluence-sitemap.md`**（若存在，fallback 情境用）— Confluence 頁面樹
+7. **`{repo}/ra-docs/{ISSUE_KEY}/files/`** — 列出所有附件檔名（含上述 PDF）
 
 ```bash
-# 列出 images/ 和 files/ 內容
-ls {repo}/ra-docs/{ISSUE_KEY}/images/
+# 列出 files/ 內容
 ls {repo}/ra-docs/{ISSUE_KEY}/files/
 ```
 
@@ -396,7 +382,7 @@ ls {repo}/ra-docs/{ISSUE_KEY}/files/
 - 有 Confluence PDF → 以 Confluence PDF 為主要規格，`jira.md` 補充
 - 有 Axure PDF → 以 Axure PDF 為主要規格，`jira.md` 補充
 - 兩份 PDF 都有 → 並列為主要規格；遇到衝突時以 **Confluence 為準**，並在規格書內標注 `📝 註：Axure 與 Confluence 描述不一致，本處採 Confluence`
-- 只有 `confluence-spec.md`（fallback 情境）→ 以該檔為主要規格，但需在 Step 7 摘要中提示「Confluence 圖片可能缺失，請對照 confluence-attachment-manifest.md 補圖」
+- 只有 `confluence-spec.md`（fallback 情境）→ 以該檔為主要規格，但需在 Step 7 摘要中提示「Confluence 圖片未納入，規格可能不完整」
 - 都沒有 → 僅參考 `jira.md`
 
 **Step 4B：填充規格書**
@@ -409,10 +395,9 @@ ls {repo}/ra-docs/{ISSUE_KEY}/files/
 2. **留言補充**：含「改為」「調整」「要補做」的留言內容納入對應 Section
 3. **操作流程附流程圖**：Section 4 每個流程附 Mermaid `flowchart TD`
 4. **狀態變化附狀態圖**：Section 7 狀態變化用 Mermaid `stateDiagram-v2`
-5. **引用截圖**：`images/` 下的圖片若與該 Section 相關，以相對路徑引用（例如 `images/preLogin-BEFORE.png`），並加上說明文字
-6. **引用附件**：`files/` 下的附件在相關 Section 標注「參考附件：{檔名}」
-7. **Section 16 主動出題**：AI 依需求類型主動補充極端情境，每條標示「🤖 AI 建議」或「⚠️ 未定義」
-8. **前端視角**：所有分析以前端工程師角度出發
+5. **引用附件**：`files/` 下的附件在相關 Section 標注「參考附件：{檔名}」
+6. **Section 16 主動出題**：AI 依需求類型主動補充極端情境，每條標示「🤖 AI 建議」或「⚠️ 未定義」
+7. **前端視角**：所有分析以前端工程師角度出發
 
 頂部加入 frontmatter:
 
@@ -431,7 +416,7 @@ generated_at: 2026-05-14T...
 **對 Step 3-3B 輸出的每個 `sub_specs[i]`,各自產出一份子 spec**:
 
 1. **建立子 spec 內容骨架**,使用該子情境的 `sections` 清單
-2. **限定填充範圍**:只用該子情境的 `change_units` 對應的 jira.md / spec.md 內容
+2. **限定填充範圍**:只用該子情境的 `change_units` 對應的 jira.md / 外部規格(PDF 指定頁或 confluence-spec.md)內容
 3. **跨子情境引用**:若某個 change unit 與其他子情境相關,用以下格式標註:
    ```markdown
    > 📎 此項與子情境 02(權限控管)相關,詳見 `VIPOP-1234-02-permission-control.spec.md`
@@ -451,7 +436,7 @@ generated_at: 2026-05-14T...
    ---
    ```
 
-**填充原則(其餘)**:沿用 4B-1 的 1-8 條(包含 images/ 與 files/ 的引用方式)
+**填充原則(其餘)**:沿用 4B-1 的 1-7 條(包含 files/ 的引用方式)
 
 #### Step 4C:複合情境的 index 檔內容(僅複合情境)
 
@@ -484,9 +469,8 @@ generated_at: 2026-05-14T...
 
 ## 共用資源
 - Jira 來源快照:`./jira.md`
-- Axure 規格快照:`./spec.md`
-- 截圖資源:`./images/`
-- 附件檔案:`./files/`
+- 外部規格 PDF:`./files/`(confluence-spec.pdf / axure-spec.pdf,若有)
+- PDF 索引:`./confluence-pdf-index.md` / `./axure-pdf-index.md`(若有)
 - PO 補問清單:`./VIPOP-1234-checkList.md`
 
 ## 子 spec 檔案
@@ -587,9 +571,9 @@ generated_at: 2026-05-14T...
 ```
 {repo}/ra-docs/{ISSUE_KEY}/
   ├── jira.md                          (Step 2 Subagent A 已產出)
-  ├── spec.md                          (Step 2 Subagent B 已產出,若有 Axure)
-  ├── images/                          (Step 2 Subagent B 已產出,若有 Axure 截圖)
-  ├── files/                           (Step 2 Subagent A 已下載 Jira 附件)
+  ├── confluence-pdf-index.md          (Step 2 Subagent C-pdf 已產出,若有 Confluence PDF)
+  ├── axure-pdf-index.md               (Step 2 Subagent B-pdf 已產出,若有 Axure PDF)
+  ├── files/                           (Step 1A 複製的 Confluence/Axure PDF)
   ├── {ISSUE_KEY}-spec.md              ← Step 4B-1 產出
   └── {ISSUE_KEY}-checkList.md         ← Step 5A 產出
 ```
@@ -599,8 +583,7 @@ generated_at: 2026-05-14T...
 ```
 {repo}/ra-docs/{ISSUE_KEY}/
   ├── jira.md                                   (共用)
-  ├── spec.md                                   (共用,若有)
-  ├── images/                                   (共用)
+  ├── confluence-pdf-index.md / axure-pdf-index.md  (共用,若有 PDF)
   ├── files/                                    (共用)
   ├── {ISSUE_KEY}-index.md                      ← Step 4C 產出
   ├── {ISSUE_KEY}-01-{topic}.spec.md            ← Step 4B-2 產出(子 spec 1)
@@ -613,31 +596,8 @@ generated_at: 2026-05-14T...
 
 ---
 
-**6C. 附件下載提示（由 AI 在對話中告知，不寫入檔案）**
 
-Atlassian MCP 與 API Token 皆無法下載 Confluence 附件 binary（Atlassian Cloud 對 Confluence download endpoint 拒絕 Basic Auth，僅接受 OAuth Bearer）。Jira 附件可下載，Confluence 圖片需手動。
-
-**告知使用者執行以下指令**（AI 不主動執行，避免接觸 token）：
-
-```bash
-# 模式 1：自動推斷 issue key 並下載該 ticket 所有 Jira 附件
-bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh all {repo}/ra-docs/{ISSUE_KEY}
-
-# 模式 2：明確指定 issue key
-bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh issue {ISSUE_KEY} --out {repo}/ra-docs/{ISSUE_KEY}/files
-
-# 模式 3：指定單一 attachment id
-bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --out {repo}/ra-docs/{ISSUE_KEY}/files
-```
-
-**Confluence 附件**：腳本不支援，請使用者開啟 `confluence-attachment-manifest.md`，依清單到對應 Confluence 頁面點開圖片右鍵另存到 `{repo}/ra-docs/{ISSUE_KEY}/images/`。
-
-**重要原則**：
-- AI 不持有 Atlassian token，下載由使用者自己跑 script
-- 申請 token：https://id.atlassian.com/manage-profile/security/api-tokens
-- token 風險：等同帳號全權限，外洩會危及整個 104 內部資料
-- 腳本走 curl + Basic Auth，token 不持久化，read -s 不入 history
-### Step 6.5：詢問是否產出 PO 友善 HTML
+### 6C：詢問是否產出 PO 友善 HTML
 
 完成 .md 寫入後,**每次都要主動詢問使用者**:
 
@@ -673,9 +633,7 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
    ├── axure-pdf-index.md                 （Axure PDF 索引，若有 PDF）
    ├── confluence-spec.md                 （Confluence fallback 規格，僅無 PDF 時出現）
    ├── confluence-sitemap.md              （Confluence 頁面樹，fallback 情境）
-   ├── confluence-attachment-manifest.md  （Confluence 圖片清單，fallback 情境）
-   ├── images/                            （圖片：手動補入或 Jira 附件）
-   ├── files/                             （Jira 附件 + Confluence/Axure PDF）
+   ├── files/                             （Confluence/Axure PDF）
    ├── {ISSUE_KEY}-spec.md
    └── {ISSUE_KEY}-checkList.md           （僅 PO 補問清單）
 
@@ -695,27 +653,20 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
 
 {若 Confluence 走 fallback (無 PDF)}
 ⚠️ Confluence 走 API fallback
-   圖片可能缺失，請對照 confluence-attachment-manifest.md 手動補圖到 images/
-   補完後可請我重跑 Step 4 重新填充規格書
+   圖片未納入，規格可能不完整。
+   建議改提供 Confluence PDF 後請我重跑，以補齊規格。
+
+{若 axure_skip=true}
+⚠️ Axure 規格未納入
+   偵測到 Axure 連結（{axure_url}）但未提供 PDF，
+   本規格書僅基於 Jira{若有 Confluence}/Confluence{/若} 內容，完成度可能不足。
+   建議匯出 Axure PDF 後請我重跑，以補齊規格。
 
 🔴 Blocker 摘要(需優先回答)
    {逐條列出 Blocker 問題,最多顯示 3 條}
 
 {若 Step 0A 偵測到 template 更新}
 📢 Template 有更新：{變動摘要一行}
-
-{若有附件未下載（必出現，因 MCP 不能下載附件）}
-📎 附件下載（手動）
-   Jira 附件可用腳本下載；Confluence 附件需手動（Atlassian 限制）。
-
-   Jira 附件下載（AI 不持有 token）：
-   bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh all {repo}/ra-docs/{ISSUE_KEY}
-
-   執行時會互動式詢問你的 Atlassian email 與 API token：
-   申請 token: https://id.atlassian.com/manage-profile/security/api-tokens
-
-   Confluence 附件：請開啟 confluence-attachment-manifest.md
-   依清單到對應頁面點開圖片右鍵另存到 images/
 ```
 
 #### 7B:複合情境
@@ -725,7 +676,7 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
 
 📁 檔案位置
    {repo}/ra-docs/{ISSUE_KEY}/
-   ├── jira.md / spec.md / images/ / files/    (來源資料庫,共用)
+   ├── jira.md / *-pdf-index.md / files/       (來源資料庫,共用)
    ├── {ISSUE_KEY}-index.md                    ← 從這裡開始閱讀
    ├── {ISSUE_KEY}-01-{topic}.spec.md
    ├── {ISSUE_KEY}-02-{topic}.spec.md
@@ -742,6 +693,11 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
 
 🔴 Blocker 摘要(需優先回答)
    {逐條列出 Blocker 問題,最多顯示 3 條,每條標註所屬子 spec}
+
+{若 axure_skip=true}
+⚠️ Axure 規格未納入
+   偵測到 Axure 連結但未提供 PDF，所有子 spec 僅基於 Jira{若有 Confluence}/Confluence{/若} 內容，
+   完成度可能不足。建議匯出 Axure PDF 後請我重跑。
 ```
 
 #### 7C：HTML 補充摘要(僅在 Step 6.5 使用者選擇要產出 HTML 時加上)
@@ -782,36 +738,6 @@ bash {SKILL_REPO}/jira-to-spec/scripts/fetchAttachment.sh jira <attachmentId> --
 - 若使用者想要強制合併為單一 spec,可在觸發語句加上「合併產出」或「一份 spec」
 - **HTML 化是選用步驟**:Step 6.5 每次主動詢問,使用者明確說「不要」則跳過;觸發語句已含「不要 HTML」「只要 md」也跳過
 - HTML 產出失敗**不影響 .md 可用性**,後者已是完整交付物
-
----
-
-## 內建備用模板（filesystem 讀取失敗時使用）
-
-> 正常情況下 Step 0C 會從本地讀取最新版本，此處僅作 fallback。
-
-Section 編號與標題對照：
-
-| # | 標題 | 對應需求類型 |
-|---|------|------------|
-| 1 | 影響範圍（角色 / 頁面 / 這次不改） | 全部 |
-| 2 | 權限設計（矩陣 / 檢查時機） | permission |
-| 3 | 文案 / 版面異動 | content |
-| 4 | 操作流程（現行 / 調整後 / 流程圖） | interaction |
-| 5 | 提示與文案（Modal / Toast / Banner） | interaction |
-| 6 | 商業規則（計費 / 額度） | permission |
-| 7 | 狀態變化（狀態圖） | permission |
-| 8 | 功能移除（體驗 / 資料處理） | removal |
-| 9 | 頁面結構（URL / 狀態 / SEO） | feature |
-| 10 | 表單（欄位 / 驗證 / 送出） | feature |
-| 11 | 列表 / 搜尋結果（排序 / 分頁） | feature |
-| 12 | 追蹤埋點（事件 / 漏斗） | ga / tracking |
-| 13 | 通知 / 信件 | feature |
-| 14 | 既有頁面調整 | feature |
-| 15 | 錯誤處理（頁面 / 操作 / 表單 / 恢復） | 全部 |
-| 16 | 例外情境（操作 / 網路 / 資料 / 裝置 / 權限 / 併發） | 全部 |
-
-各 Section 詳細格式請參照：
-`{SKILL_REPO}/jira-to-spec/references/template.md`
 
 ---
 
