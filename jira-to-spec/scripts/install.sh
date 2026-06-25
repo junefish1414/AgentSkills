@@ -49,31 +49,6 @@ if [ ! -f "$SYNC_SCRIPT_SRC" ]; then
 fi
 print_ok "sync-template.sh 找到了：$SYNC_SCRIPT_SRC"
 
-# 檢查 fetchAttachment.sh 的依賴：jq
-# jq 用於解析 Atlassian REST API 回傳的 JSON
-if command -v jq &> /dev/null; then
-  print_ok "jq 已安裝：$(jq --version)"
-else
-  print_warn "未偵測到 jq（fetchAttachment.sh 需要 jq 才能解析 Atlassian API 回應）"
-
-  if command -v brew &> /dev/null; then
-    read -rp "  是否現在用 brew install jq 安裝？(y/N) " install_jq
-    if [[ "$install_jq" =~ ^[Yy]$ ]]; then
-      if brew install jq; then
-        print_ok "jq 安裝完成：$(jq --version)"
-      else
-        print_warn "jq 安裝失敗，fetchAttachment.sh 無法使用（其他功能不受影響）"
-      fi
-    else
-      print_warn "略過 jq 安裝，之後若要用 fetchAttachment.sh 請執行：brew install jq"
-    fi
-  else
-    print_warn "未偵測到 brew，請手動安裝 jq："
-    print_warn "  macOS：brew install jq"
-    print_warn "  Linux：sudo apt install jq / sudo yum install jq"
-  fi
-fi
-
 # ============================================================
 # Step 2：詢問設定
 # ============================================================
