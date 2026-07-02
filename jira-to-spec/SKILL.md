@@ -33,8 +33,9 @@ Step 2:平行派出 subagent
                     【資料庫快照建立完成】
                           ↓
 Step 3:判斷需求類型與情境組合
-  ├─ 3-3A 單一情境 → Step 4B-1 → Step 5A → Step 6A
-  └─ 3-3B 複合情境 → Step 4B-2 + 4C → Step 5B → Step 6B
+  ├─ 3-3A 單一情境 → Step 4B-1 → Step 5A → 5C → Step 6A
+  └─ 3-3B 複合情境 → Step 4B-2 + 4C → Step 5B → 5C → Step 6B
+  (5C:依各題 🔗 影響 呼叫 blocker-overview 產 overview.html — 阻塞圖 + 可開工比例 + 待決問題詳述)
 Step 6.5:詢問是否產出 PO 友善 HTML(每次必問)
 Step 7:對話輸出摘要
 ```
@@ -483,6 +484,16 @@ generated_at: 2026-05-14T...
 
 ### Step 5：在規格書中未明確的項目整理成 PO 補問清單
 
+**影響與背景標註總則（5A / 5B 都適用）**：
+
+每個 🔴 Blocker / 🟡 Warning 問題都要標 `🔗 影響` 與 `背景` 兩行，作為 Step 5C overview 圖與詳述卡片的資料源頭：
+
+- **`- 🔗 影響`（必填）**：列出它沒答會卡住哪些項目。
+  - **封閉集合**：只能指向「本票實際存在的項目」——已抽出的 change_unit（U1…）、實際要填的 Section（§N）、或其他實際存在的問題（Q-NNN）。**禁止連到清單外不存在的東西**（防幻覺）。
+  - **決策鏈**：若某問題要先答了另一題才有意義，用 `Q-NNN` 指向前置題（例如「權限不足怎麼處理」依賴「是否規劃權限模組」）。
+  - **沒影響就寫「無」**：確實獨立的問題標 `🔗 影響：無`。
+- **`- 背景`（必填）**：前後文——這題從哪來、牽涉哪個功能、為什麼有爭議或未定（例如「Confluence 寫 A、Jira 留言寫 B，兩者打架」）。寫到**沒有專案脈絡的主管也讀得懂在問什麼**。這是 Step 5C overview **詳述卡片「背景」欄的唯一來源，缺了卡片背景就空**。
+
 #### 5A:單一情境
 
 將所有 ⚠️ 彙整,分三級,用選擇題格式,寫入 `{ISSUE_KEY}-checkList.md`:
@@ -492,12 +503,16 @@ generated_at: 2026-05-14T...
 
 ### 🔴 Blocker（必須回答才能開工）
 **Q-001：{問題}**
+- 🔗 影響：Q-002、U3、§2、§6、§15、§16（連帶 6 項，全票最廣）
+- 背景：{前後文，例如「Confluence 寫完整改版、Jira 留言縮限範疇，兩者打架」}
 - [ ] A. {選項}（建議）
 - [ ] B. {選項}
 - [ ] C. 其他：___
 
 ### 🟡 Warning（強烈建議回答）
 **Q-002：{問題}**
+- 🔗 影響：§15、§16
+- 背景：{前後文}
 - [ ] A. {選項}
 - [ ] B. {選項}
 
@@ -517,6 +532,8 @@ generated_at: 2026-05-14T...
 ## 🔴 Blocker — 全票阻塞問題(跨子情境)
 
 **Q-001:{跨子情境的關鍵問題,例如命名規範、共用元件命名}**
+- 🔗 影響：U1、U2、U3（跨 3 個子情境）
+- 背景：{前後文}
 - [ ] A. ...
 
 ---
@@ -525,10 +542,14 @@ generated_at: 2026-05-14T...
 
 ### 🔴 Blocker
 **Q-002:{問題}** `[子 spec 01]`
+- 🔗 影響：U1、§4、§16
+- 背景：{前後文}
 - [ ] A. ...
 
 ### 🟡 Warning
 **Q-003:{問題}** `[子 spec 01]`
+- 🔗 影響：§5
+- 背景：{前後文}
 
 ---
 
@@ -536,9 +557,13 @@ generated_at: 2026-05-14T...
 
 ### 🔴 Blocker
 **Q-004:{問題}** `[子 spec 02]`
+- 🔗 影響：Q-005、U3、§2、§15
+- 背景：{前後文}
 
 ### 🟡 Warning
 **Q-005:{問題}** `[子 spec 02]`
+- 🔗 影響：§15
+- 背景：{前後文}
 
 ---
 
@@ -546,6 +571,8 @@ generated_at: 2026-05-14T...
 
 ### 🟡 Warning
 **Q-006:{問題}** `[子 spec 03]`
+- 🔗 影響：§12
+- 背景：{前後文}
 
 ---
 
@@ -562,6 +589,44 @@ generated_at: 2026-05-14T...
 
 ---
 
+#### 5C:整票 overview 圖與可開工比例(單一 / 複合情境都產)
+
+依 5A / 5B 每題標的 `🔗 影響` + Step 3 的 change_units 清單,產出**一張整票總覽圖**,讓主管/PM 一眼看完:這票要改什麼、哪些坑沒決定、坑連累什麼、哪些可直接開工。圖下方另附**待決問題詳述**卡片,讓主管不靠專案脈絡也讀得懂每題在問什麼。
+
+**節點來源(封閉集合,與 `🔗 影響` 同源)**:
+- 所有 change_unit(U1…)
+- 所有 🔴 Blocker 與 🟡 Warning 問題(Q-NNN)
+- 被任一 `🔗 影響` 指到的 Section(§N)
+
+**邊**:逐題把 `🔗 影響` 的每個目標連成一條邊(Q→Q 決策鏈 / Q→U / Q→§ / U→§)。
+
+**三欄佈局**:① 待決問題 → ② 改動單元 → ③ 受影響規格(對應 blocker-overview 的 decide / units / spec 三欄)。
+
+**節點上色(就緒判定)**:
+- change_unit 三態:
+  - 🔴 **卡住**(stuck):被任一**未答的** 🔴 Blocker 連到
+  - 🟡 **待確認**(soft):只被 🟡 Warning 連到(無 Blocker)
+  - ✅ **可開工**(free):沒被任何未答問題連到
+- 問題:`root`(被其他 Q 依賴的根決策,粗框)/ `blk`(🔴)/ `warn`(🟡)
+- Section:比照連到它的最嚴重來源上色
+
+**可開工比例(分子/分母都標,避免被當成 PO 規格分數)**:
+- 分母 = change_unit 總數;分子 = ✅可開工數(沒被任何未答 Blocker 連到的 unit)
+- 呈現為分數 `可開工 {ready}/{total}`,三態並列 `✅{n} 可開工 / 🔴{n} 卡住 / 🟡{n} 待確認`
+- **務必標明「卡住=等決策,非規格未寫」**:PO 寫越完整、拆出的 unit 越多,分母越大,少數根決策未定就會壓低比例——這不是 PO 規格完成度
+- 此數字**隨 PM 回答 Blocker 動態上升**:答掉一題後,其下游 unit 若不再被任何未答 Blocker 連到即轉可開工。重跑 Step 5 即可刷新。
+
+**輸出**:呼叫 **`blocker-overview`** skill 產 `{ISSUE_KEY}-overview.html`——**圖與可開工比例只放這裡,不內嵌進 checklist**(checkList.md / 之後轉出的 checkList.html 皆維持純補問清單)。HTML/CSS 細節全在該 skill,本流程只把上方算好的資料傳入(介面詳見該 skill):
+- `issue_key` / `summary` / `out_path = {repo}/ra-docs/{ISSUE_KEY}/{ISSUE_KEY}-overview.html`
+- `ready`:`{ total=change_unit 總數, ready/stuck/soft=上方三態統計 }`
+- `nodes`:三欄(decide/units/spec)節點,各帶 `state`(問題 `root`/`blk`/`warn`;單元與規格 `stuck`/`soft`/`free`)、`title`(問題寫**完整問句**、單元/規格寫完整名稱,讓主管不查編號就懂)、`desc`(一行白話影響,規格欄可省)
+- `edges`:依各題 `🔗 影響` 連線,色 `r`=🔴 / `a`=🟡 / `g`=可開工。只連封閉集合內節點,**不得**新增清單外節點。
+- `details`:每個 Blocker/Warning 一筆,供圖下方「待決問題詳述」卡片用——`question`(完整問句)、`background`(**前後文**,直接取自 5A/5B 該 Q 的 `背景` 行:這題從哪來、牽涉哪個功能、目前卡在哪,讓沒專案脈絡的主管也讀得懂)、`options`(選項,取自 checklist 該 Q 的 A/B/C;warn 題可空)、`badge`(連帶卡住數,如「連帶卡住 2 單元 · 1 規格」)、`blocks`(被卡的單元/規格清單)
+
+> 可開工 {ready}/{total} 仍會出現在 **Step 7 對話摘要**;checklist 本身不再含圖與比例。
+
+---
+
 ### Step 6：寫入檔案
 
 用 filesystem MCP 寫入檔案至 `{repo}/ra-docs/{ISSUE_KEY}/`。**單一情境與複合情境的輸出結構不同**:
@@ -575,7 +640,8 @@ generated_at: 2026-05-14T...
   ├── axure-pdf-index.md               (Step 2 Subagent B-pdf 已產出,若有 Axure PDF)
   ├── files/                           (Step 1A 複製的 Confluence/Axure PDF)
   ├── {ISSUE_KEY}-spec.md              ← Step 4B-1 產出
-  └── {ISSUE_KEY}-checkList.md         ← Step 5A 產出
+  ├── {ISSUE_KEY}-checkList.md         ← Step 5A 產出(純補問清單)
+  └── {ISSUE_KEY}-overview.html        ← Step 5C 產出(整票阻塞總覽 + 可開工比例,獨立 HTML,離線可開)
 ```
 
 #### 6B:複合情境輸出
@@ -589,7 +655,8 @@ generated_at: 2026-05-14T...
   ├── {ISSUE_KEY}-01-{topic}.spec.md            ← Step 4B-2 產出(子 spec 1)
   ├── {ISSUE_KEY}-02-{topic}.spec.md            ← Step 4B-2 產出(子 spec 2)
   ├── {ISSUE_KEY}-03-{topic}.spec.md            ← Step 4B-2 產出(子 spec 3)
-  └── {ISSUE_KEY}-checkList.md                  ← Step 5B 產出(共用)
+  ├── {ISSUE_KEY}-checkList.md                  ← Step 5B 產出(共用,純補問清單)
+  └── {ISSUE_KEY}-overview.html                 ← Step 5C 產出(整票阻塞總覽 + 可開工比例,獨立 HTML,共用)
 ```
 
 > 子 spec 數量取決於 Step 3-3B 偵測到的子情境數量,可能是 2 / 3 / 4 / ... 份。
@@ -635,13 +702,15 @@ generated_at: 2026-05-14T...
    ├── confluence-sitemap.md              （Confluence 頁面樹，fallback 情境）
    ├── files/                             （Confluence/Axure PDF）
    ├── {ISSUE_KEY}-spec.md
-   └── {ISSUE_KEY}-checkList.md           （僅 PO 補問清單）
+   ├── {ISSUE_KEY}-checkList.md           （純 PO 補問清單）
+   └── {ISSUE_KEY}-overview.html          （整票阻塞總覽 + 可開工比例，獨立 HTML，離線可開）
 
 📊 規格書摘要
    scope: {scope} | type: {type}
    外部規格來源: {Confluence PDF / Axure PDF / Confluence PDF+Axure PDF / Confluence (fallback) / 無}
    填充 Section: {已填 Section 編號列表}
    ⚠️ 待確認項目: {N} 個（含 Blocker {X} 個）
+   📈 可開工: {可}/{總} 單元（✅{可} 可開工 / 🔴{n} 卡住 / 🟡{n} 待確認）｜卡住=等決策，非規格未寫
 
 {若有 Confluence PDF}
 📘 Confluence PDF：files/confluence-spec.pdf （{N} 頁）
@@ -681,7 +750,8 @@ generated_at: 2026-05-14T...
    ├── {ISSUE_KEY}-01-{topic}.spec.md
    ├── {ISSUE_KEY}-02-{topic}.spec.md
    ├── {ISSUE_KEY}-03-{topic}.spec.md
-   └── {ISSUE_KEY}-checkList.md                (PO 補問清單,共用)
+   ├── {ISSUE_KEY}-checkList.md                (純 PO 補問清單,共用)
+   └── {ISSUE_KEY}-overview.html               (整票阻塞總覽 + 可開工比例,獨立 HTML,共用)
 
 📊 拆分摘要
    偵測到 3 個獨立 (scope, type) 組合,已拆為 3 份子 spec:
@@ -690,6 +760,7 @@ generated_at: 2026-05-14T...
    03. {topic_zh}  ({scope} × {type})  → §{sections}
 
    ⚠️ 待確認項目: {N} 個(含 Blocker {X} 個)
+   📈 可開工: {可}/{總} 單元(✅{可} 可開工 / 🔴{n} 卡住 / 🟡{n} 待確認)｜卡住=等決策，非規格未寫
 
 🔴 Blocker 摘要(需優先回答)
    {逐條列出 Blocker 問題,最多顯示 3 條,每條標註所屬子 spec}
