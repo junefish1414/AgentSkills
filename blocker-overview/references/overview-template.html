@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  jira-to-spec 整票阻塞總覽圖範本（Step 5C 使用）
+  AI 複製本檔為 {ISSUE_KEY}-overview.html，只替換 5 個區塊：
+
+  〔1〕.head        → 票號 + 標題
+  〔2〕.gauge       → 可開工 X / Y（分子=可開工單元 分母=單元總數）、進度條三段寬度(%)、圖例三態數字
+       〔2b〕.gauge-weight → 工時加權：把「卡幾個」升級成「卡多少工時」，讓嚴重性有感。
+                     人/天 = 各單元 size 中值加總（S≈0.5d · M≈1.5d · L≈4d · XL≈8d）。
+                     wbar 三段寬 = 可開工/卡住/待確認 各自「人/天總和 ÷ 全票人/天」。
+                     wtext 標卡住人/天與佔比。此區永遠保留 est 免責（AI 粗估待校正）。
+  〔3〕.cols        → 兩欄節點：① 待決問題 / ② 改動單元（受影響規格章節不畫欄，改寫在詳述「卡住」列）
+                     每個節點結構：
+                       <span class="qid">編號（問題附根決策標記）</span>
+                       <span class="nsize z-{S|M|L|XL}">size</span>  ← 只「② 改動單元」欄放，問題欄不放
+                       <div class="ntitle">完整問句 / 完整名稱</div>
+                       <div class="ndesc">一行白話影響（可省，建議問題與卡住的單元都寫）</div>
+                     狀態 class：
+                       問題：n-root(根決策) / n-blk(🔴) / n-warn(🟡)
+                       單元：n-stuck(被🔴卡) / n-soft(只被🟡) / n-free(✅可開工)
+                     size：每個改動單元由 AI 依描述粗估 T-shirt（純文案=S、新 API＋狀態機=L…）。
+                           兩處都要寫：① node class 加 sz-{S|M|L|XL} → 範本放大卡片高度＋字級；
+                           ② 角落 span nsize z-{S|M|L|XL} → 上色（S 灰→M 藍→L 橙→XL 紅）。title 標「待 SA 校正」。
+                     ⚠️ 主管看圖不查編號 → ntitle 要寫完整問句（非短語），不要只寫「列表範疇？」
+  〔4〕EDGES 陣列   → 依各題的「🔗 影響」連線，格式 [來源id, 目標id, 色]，只連 Q→Q（決策鏈）與 Q→U
+                     色：'r'=來源是🔴 'a'=來源是🟡 'g'=可開工/中性
+  〔5〕.detail      → 待決問題詳述：每個 Q 一張卡片，寫足「背景 / 選項 / 卡住」，
+                     主管不靠專案脈絡也讀得懂在問什麼（圖看關係、詳述看內容）。
+                     s-root / s-blk / s-warn 對應左邊框色；warn 題可省「選項」列。
+                     ⚠️ 每張卡片要加 id="d-{對應問題 node 的 id}"（如 node id=Q001 → 卡片 id=d-Q001），
+                        範本 JS 會自動讓圖上問題節點可點、跳到該卡片並高亮，無需額外處理。
+  本檔自帶全部 CSS/JS（含 hover 高亮相連鏈降噪、size 自動放大卡片、點問題節點跳詳述），
+  不依賴任何 CDN，離線可開。其餘 (CSS / draw() / bindHover()) 不要動。
+  下方為示範資料（VIPOP-1234 假票），照樣替換即可。
+  ============================================================
+-->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>規格總覽</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --ink: #1f2430; --muted: #6b7280; --line: #e5e7eb;
+    --green: #16a34a; --red: #dc2626; --amber: #d97706;
+    --shadow: 0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Segoe UI", sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+  .head .key { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: #fff; background: var(--ink); padding: 4px 10px; border-radius: 6px; }
+  .head h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  .gauge { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; margin-bottom: 22px; box-shadow: var(--shadow); }
+  .gauge-top { display: flex; align-items: flex-end; gap: 14px; margin-bottom: 16px; }
+  .gauge-pct { font-size: 44px; font-weight: 760; line-height: 1; letter-spacing: -.02em; }
+  .gauge-pct .deno { font-size: 24px; font-weight: 600; color: var(--muted); }
+  .gauge-label { font-size: 14px; color: var(--muted); padding-bottom: 6px; }
+  .gauge-label b { color: var(--ink); font-weight: 650; }
+  .bar { display: flex; height: 14px; border-radius: 8px; overflow: hidden; background: var(--line); margin-bottom: 14px; }
+  .bar i { display: block; height: 100%; }
+  .bar .s-green { background: var(--green); } .bar .s-red { background: var(--red); } .bar .s-amber { background: var(--amber); }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.green { background: var(--green); } .dot.red { background: var(--red); } .dot.amber { background: var(--amber); }
+  .legend b { color: var(--ink); font-weight: 650; }
+  .gauge-weight { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--line); }
+  .wlabel { font-size: 12px; font-weight: 650; color: var(--muted); }
+  .wlabel .est { font-weight: 450; opacity: .85; }
+  .wbar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--line); margin: 9px 0 10px; }
+  .wbar i { display: block; height: 100%; }
+  .wtext { font-size: 13px; color: var(--muted); }
+  .wtext b { color: var(--ink); font-weight: 700; }
+  .graph-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px 26px 26px; box-shadow: var(--shadow); }
+  .graph { position: relative; }
+  .cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 120px; position: relative; z-index: 2; }
+  .col-title { font-size: 13px; font-weight: 650; color: var(--muted); margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+  .col { display: flex; flex-direction: column; gap: 22px; }
+  .node { position: relative; padding: 11px 15px; border-radius: 10px; background: #fff; border: 1px solid var(--line); border-left-width: 4px; box-shadow: 0 1px 2px rgba(16,24,40,.05); }
+  .node .qid { font-size: 11px; font-weight: 700; letter-spacing: .03em; opacity: .65; display: block; margin-bottom: 3px; }
+  .node .ntitle { font-size: 13.5px; font-weight: 600; line-height: 1.4; }
+  .node .ndesc { font-size: 11.5px; font-weight: 450; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+  .node .nsize { position: absolute; top: 11px; right: 13px; font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 7px; border-radius: 999px; }
+  .nsize.z-S  { background: #eef1f4; color: #6b7280; }
+  .nsize.z-M  { background: #e0edff; color: #1e5fbf; }
+  .nsize.z-L  { background: #ffe8cc; color: #c2610c; }
+  .nsize.z-XL { background: #fdd8d8; color: #c02626; }
+  /* 卡片大小隨 size：node 帶 sz-* class，越大越高、字級越大（不用 :has，相容性最穩） */
+  .node[class*="sz-"] .ntitle { padding-right: 30px; }
+  .node.sz-S  { padding-top: 7px;  padding-bottom: 7px;  border-left-width: 3px; }
+  .node.sz-M  { padding-top: 13px; padding-bottom: 13px; border-left-width: 4px; }
+  .node.sz-L  { padding-top: 21px; padding-bottom: 21px; border-left-width: 6px; box-shadow: 0 3px 10px rgba(16,24,40,.10); }
+  .node.sz-XL { padding-top: 30px; padding-bottom: 30px; border-left-width: 8px; box-shadow: 0 4px 14px rgba(16,24,40,.13); }
+  .node.sz-S  .ntitle { font-size: 12px; }
+  .node.sz-M  .ntitle { font-size: 13.5px; }
+  .node.sz-L  .ntitle { font-size: 15.5px; font-weight: 700; }
+  .node.sz-XL .ntitle { font-size: 17px;   font-weight: 700; }
+  .n-blk  { background: #fef2f2; border-color: #fecaca; border-left-color: #dc2626; }
+  .n-warn { background: #fffbeb; border-color: #fde68a; border-left-color: #d97706; }
+  .n-root { background: #fee2e2; border-color: #f87171; border-left-color: #b91c1c; box-shadow: 0 0 0 3px rgba(220,38,38,.12), 0 1px 2px rgba(16,24,40,.05); }
+  .n-stuck { background: #fef2f2; border-color: #fecaca; border-left-color: #ef4444; }
+  .n-soft  { background: #fffbeb; border-color: #fde68a; border-left-color: #f59e0b; }
+  .n-free  { background: #f0fdf4; border-color: #bbf7d0; border-left-color: #22c55e; }
+  svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+  .hint { font-size: 12.5px; color: var(--muted); margin: 16px 4px 0; }
+  .hint code { background: #eef0f3; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  /* 待決問題詳述 */
+  .detail { margin-top: 26px; }
+  .detail-title { font-size: 15px; font-weight: 650; margin: 0 0 14px; }
+  .dcard { background: var(--card); border: 1px solid var(--line); border-left-width: 4px; border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .dcard.s-root { border-left-color: #b91c1c; }
+  .dcard.s-blk  { border-left-color: #dc2626; }
+  .dcard.s-warn { border-left-color: #d97706; }
+  .dcard-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .dcard-qid { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; }
+  .dcard.s-root .dcard-qid, .dcard.s-blk .dcard-qid { color: #b91c1c; }
+  .dcard.s-warn .dcard-qid { color: #b45309; }
+  .dcard-badge { font-size: 11.5px; font-weight: 600; color: var(--muted); background: #f3f4f6; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .dcard-q { font-size: 15px; font-weight: 650; line-height: 1.45; margin-bottom: 10px; }
+  .dcard-row { font-size: 13px; line-height: 1.6; margin-top: 6px; display: flex; gap: 10px; }
+  .dcard-row .k { color: var(--muted); font-weight: 600; flex: 0 0 auto; width: 2.4em; }
+  .dcard-row .v { color: var(--ink); }
+  .dcard-row .v .opt { font-weight: 700; }
+  /* 點問題節點跳到詳述 */
+  .node.clickable { cursor: pointer; }
+  /* hover 任一節點 → 高亮相連鏈，其餘淡化（多對多降噪） */
+  .wire { transition: opacity .15s, stroke-width .15s; }
+  .graph.dim .node { opacity: .28; transition: opacity .15s; }
+  .graph.dim .node.hl { opacity: 1; }
+  .graph.dim .wire { opacity: .08; }
+  .wire.hl { opacity: 1 !important; stroke-width: 2.6px; }
+  .dcard.flash { animation: dflash 1.3s ease; }
+  @keyframes dflash { 0%,100% { box-shadow: var(--shadow); } 15% { box-shadow: 0 0 0 3px rgba(220,38,38,.4), var(--shadow); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 〔1〕標題 -->
+  <div class="head">
+    <span class="key">VIPOP-1234</span>
+    <h1>規格總覽 — 批次投遞 / 權限 / GA</h1>
+  </div>
+
+  <!-- 〔2〕可開工 X / Y：pct=可開工數、deno=單元總數、bar 三段 width、legend 數字 -->
+  <div class="gauge">
+    <div class="gauge-top">
+      <div class="gauge-pct">1<span class="deno"> / 4</span></div>
+      <div class="gauge-label">個改動單元<b> 可立即開工</b>（其餘卡在未決決策，非規格未寫）</div>
+    </div>
+    <div class="bar">
+      <i class="s-green" style="width:25%"></i>
+      <i class="s-red" style="width:50%"></i>
+      <i class="s-amber" style="width:25%"></i>
+    </div>
+    <div class="legend">
+      <span><i class="dot green"></i> <b>1</b>&nbsp;可開工</span>
+      <span><i class="dot red"></i> <b>2</b>&nbsp;卡住（待 Blocker 決策）</span>
+      <span><i class="dot amber"></i> <b>1</b>&nbsp;待確認（待 Warning）</span>
+    </div>
+    <!-- 〔2b〕工時加權：把「卡幾個」升級成「卡多少工時」，讓嚴重性有感。人/天 = 各單元 size 中值加總 -->
+    <div class="gauge-weight">
+      <div class="wlabel">⏱ 按工時估 <span class="est">（size 為 AI 粗估，待 SA 校正；S≈0.5d · M≈1.5d · L≈4d · XL≈8d）</span></div>
+      <div class="wbar">
+        <i class="s-green" style="width:7.7%"></i>
+        <i class="s-red" style="width:84.6%"></i>
+        <i class="s-amber" style="width:7.7%"></i>
+      </div>
+      <div class="wtext">卡住 <b>~5.5 人/天</b>（85%）　待確認 ~0.5 人/天　可開工 ~0.5 人/天</div>
+    </div>
+  </div>
+
+  <div class="graph-card">
+    <div class="graph" id="graph">
+      <svg class="wires" id="wires">
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1,1 L7,4 L1,7" fill="none" stroke="#b0b7c3" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+      </svg>
+      <!-- 〔3〕兩欄節點：node 的 id 要與 EDGES 對應；ntitle 寫完整問句/名稱 -->
+      <div class="cols">
+        <div>
+          <p class="col-title">① 待決問題</p>
+          <div class="col">
+            <div class="node n-root" id="Q001">
+              <span class="qid">🔴 Q-001 · 根決策</span>
+              <div class="ntitle">列表要完整改版，還是只縮限現有範圍？</div>
+              <div class="ndesc">方向未定，整票一半單元的改動範圍跟著未定</div>
+            </div>
+            <div class="node n-blk" id="Q002">
+              <span class="qid">🔴 Q-002</span>
+              <div class="ntitle">權限不足時，前端要直接擋下還是顯示提示？</div>
+              <div class="ndesc">卡住後台頁權限處理與 §15/§16 寫法</div>
+            </div>
+            <div class="node n-blk" id="Q003">
+              <span class="qid">🔴 Q-003</span>
+              <div class="ntitle">批次投遞一次上限要設幾筆？</div>
+              <div class="ndesc">卡住投遞按鈕的前端驗證邏輯</div>
+            </div>
+            <div class="node n-warn" id="Q004">
+              <span class="qid">🟡 Q-004</span>
+              <div class="ntitle">投遞結果的 toast 文案怎麼寫？</div>
+              <div class="ndesc">只影響提示文案，不擋開工</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="col-title">② 改動單元</p>
+          <div class="col">
+            <div class="node n-stuck sz-L" id="U1">
+              <span class="qid">U1</span><span class="nsize z-L" title="AI 粗估，待 SA 校正">L</span>
+              <div class="ntitle">批次投遞按鈕</div>
+              <div class="ndesc">等 Q-003 批次上限拍板</div>
+            </div>
+            <div class="node n-soft sz-S" id="U2">
+              <span class="qid">U2</span><span class="nsize z-S" title="AI 粗估，待 SA 校正">S</span>
+              <div class="ntitle">投遞結果 toast</div>
+              <div class="ndesc">等 Q-004 文案確認</div>
+            </div>
+            <div class="node n-stuck sz-M" id="U3">
+              <span class="qid">U3</span><span class="nsize z-M" title="AI 粗估，待 SA 校正">M</span>
+              <div class="ntitle">後台管理頁</div>
+              <div class="ndesc">等 Q-001 列表範疇拍板</div>
+            </div>
+            <div class="node n-free sz-S" id="U4">
+              <span class="qid">U4</span><span class="nsize z-S" title="AI 粗估，待 SA 校正">S</span>
+              <div class="ntitle">GA 埋點</div>
+              <div class="ndesc">無人阻擋，可直接開工</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="hint">順著箭頭看：每個未決問題卡住哪些改動單元。綠色 = 沒人擋、可直接開工。根決策（粗紅框）連帶最廣，最該先推動。受影響的規格章節寫在下方各題「卡住」列。<b>👆 點上方問題節點，跳到下方該題詳述。</b></p>
+  </div>
+
+  <!-- 〔5〕待決問題詳述：每個 Q 一張卡片，寫足 背景 / 選項 / 卡住，主管不靠脈絡也讀得懂 -->
+  <div class="detail">
+    <h2 class="detail-title">① 待決問題詳述</h2>
+
+    <div class="dcard s-root" id="d-Q001">
+      <div class="dcard-head">
+        <span class="dcard-qid">🔴 Q-001 · 根決策</span>
+        <span class="dcard-badge">連帶卡住 2 單元 · 1 規格</span>
+      </div>
+      <div class="dcard-q">列表要完整改版，還是只縮限現有範圍？</div>
+      <div class="dcard-row"><span class="k">背景</span><span class="v">這票要改投遞紀錄列表，PO 規格內同時出現「整頁重做」與「只動現有欄位」兩種描述，未指定採哪一版。</span></div>
+      <div class="dcard-row"><span class="k">選項</span><span class="v"><span class="opt">A</span> 完整改版（重做列表元件，工期大）　<span class="opt">B</span> 只縮限（沿用版型微調，風險低）</span></div>
+      <div class="dcard-row"><span class="k">卡住</span><span class="v">U3 後台管理頁、§2 權限設計</span></div>
+    </div>
+
+    <div class="dcard s-blk" id="d-Q002">
+      <div class="dcard-head">
+        <span class="dcard-qid">🔴 Q-002</span>
+        <span class="dcard-badge">連帶卡住 1 單元 · 2 規格</span>
+      </div>
+      <div class="dcard-q">權限不足時，前端要直接擋下還是顯示提示？</div>
+      <div class="dcard-row"><span class="k">背景</span><span class="v">投遞流程會碰到沒權限的使用者，規格未定義要在前端直接 disable 入口，還是放行後由後端擋並回提示。</span></div>
+      <div class="dcard-row"><span class="k">選項</span><span class="v"><span class="opt">A</span> 前端擋下（不顯示入口）　<span class="opt">B</span> 顯示提示（點了才告知無權限）</span></div>
+      <div class="dcard-row"><span class="k">卡住</span><span class="v">U3 後台管理頁、§15 錯誤處理、§16 例外情境</span></div>
+    </div>
+
+    <div class="dcard s-blk" id="d-Q003">
+      <div class="dcard-head">
+        <span class="dcard-qid">🔴 Q-003</span>
+        <span class="dcard-badge">連帶卡住 1 單元</span>
+      </div>
+      <div class="dcard-q">批次投遞一次上限要設幾筆？</div>
+      <div class="dcard-row"><span class="k">背景</span><span class="v">批次投遞需要一個上限值做前端驗證與按鈕 disable，規格沒有給數字。</span></div>
+      <div class="dcard-row"><span class="k">選項</span><span class="v"><span class="opt">A</span> 沿用舊版 30 筆　<span class="opt">B</span> PO 另訂　<span class="opt">C</span> 不限制</span></div>
+      <div class="dcard-row"><span class="k">卡住</span><span class="v">U1 批次投遞按鈕</span></div>
+    </div>
+
+    <div class="dcard s-warn" id="d-Q004">
+      <div class="dcard-head">
+        <span class="dcard-qid">🟡 Q-004</span>
+        <span class="dcard-badge">不擋開工</span>
+      </div>
+      <div class="dcard-q">投遞結果的 toast 文案怎麼寫？</div>
+      <div class="dcard-row"><span class="k">背景</span><span class="v">投遞成功/失敗會跳 toast，規格只寫「給提示」未給確切文案。可先用暫定文案開工，上線前補。</span></div>
+      <div class="dcard-row"><span class="k">卡住</span><span class="v">§5 提示與文案（僅文字，不影響邏輯）</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // 〔4〕邊：[來源id, 目標id, 來源狀態色]  色: r=🔴 a=🟡 g=可開工/中性
+  const EDGES = [
+    ['Q001','U3','r'],     // r=🔴  a=🟡  g=可開工/中性
+    ['Q002','U3','r'],     // U3 同時卡在 Q001(列表範疇) 與 Q002(權限處理)
+    ['Q003','U1','r'],
+    ['Q004','U2','a'],
+  ];
+  const COLOR = { r: '#f0a8a8', a: '#f0c68a', g: '#9bd0ae' };
+
+  function draw() {
+    const graph = document.getElementById('graph');
+    const svg = document.getElementById('wires');
+    const gb = graph.getBoundingClientRect();
+    [...svg.querySelectorAll('path.wire')].forEach(p => p.remove());
+    function colIndex(el) {
+      const cols = el.closest('.cols');
+      return [...cols.children].indexOf(el.closest('.cols > div'));
+    }
+    EDGES.forEach(([from, to, c]) => {
+      const fa = document.getElementById(from), ta = document.getElementById(to);
+      if (!fa || !ta) return;
+      const a = fa.getBoundingClientRect(), b = ta.getBoundingClientRect();
+      const ai = colIndex(fa), bi = colIndex(ta);
+      let x1, y1, x2, y2, d;
+      if (ai === bi) {
+        x1 = a.right - gb.left; y1 = a.top + a.height/2 - gb.top;
+        x2 = b.right - gb.left; y2 = b.top + b.height/2 - gb.top;
+        const bulge = 46;
+        d = `M ${x1} ${y1} C ${x1+bulge} ${y1}, ${x2+bulge} ${y2}, ${x2} ${y2}`;
+      } else {
+        x1 = a.right - gb.left; y1 = a.top + a.height/2 - gb.top;
+        x2 = b.left - gb.left;  y2 = b.top + b.height/2 - gb.top;
+        const dx = Math.max(40, (x2 - x1) * 0.45);
+        d = `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`;
+      }
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('class', 'wire');
+      p.dataset.from = from; p.dataset.to = to;
+      p.setAttribute('d', d);
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', COLOR[c] || '#c2c8d2');
+      p.setAttribute('stroke-width', '1.8');
+      p.setAttribute('marker-end', 'url(#ah)');
+      svg.appendChild(p);
+    });
+  }
+  // 點問題節點 → 平滑捲到下方對應詳述卡片並高亮（卡片 id = 'd-' + 節點 id）
+  function bindJump() {
+    const firstCol = document.querySelector('#graph .cols > div:first-child');
+    if (!firstCol) return;
+    firstCol.querySelectorAll('.node').forEach(function(n) {
+      const card = document.getElementById('d-' + n.id);
+      if (!card) return;
+      n.classList.add('clickable');
+      n.addEventListener('click', function() {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+      });
+    });
+  }
+  // hover 任一節點 → 高亮它連到的鏈（對端節點 + 連線），其餘淡化
+  function bindHover() {
+    const graph = document.getElementById('graph');
+    const svg = document.getElementById('wires');
+    graph.querySelectorAll('.node').forEach(function(n) {
+      n.addEventListener('mouseenter', function() {
+        graph.classList.add('dim');
+        n.classList.add('hl');
+        EDGES.forEach(function(e) {
+          if (e[0] === n.id || e[1] === n.id) {
+            const other = document.getElementById(e[0] === n.id ? e[1] : e[0]);
+            if (other) other.classList.add('hl');
+          }
+        });
+        svg.querySelectorAll('path.wire').forEach(function(p) {
+          if (p.dataset.from === n.id || p.dataset.to === n.id) p.classList.add('hl');
+        });
+      });
+      n.addEventListener('mouseleave', function() {
+        graph.classList.remove('dim');
+        graph.querySelectorAll('.node.hl').forEach(function(x) { x.classList.remove('hl'); });
+        svg.querySelectorAll('path.hl').forEach(function(x) { x.classList.remove('hl'); });
+      });
+    });
+  }
+  window.addEventListener('load', function() { draw(); bindJump(); bindHover(); });
+  window.addEventListener('resize', draw);
+</script>
+</body>
+</html>
