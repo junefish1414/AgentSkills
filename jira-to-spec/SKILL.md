@@ -33,9 +33,10 @@ Step 2:平行派出 subagent
                     【資料庫快照建立完成】
                           ↓
 Step 3:判斷需求類型與情境組合
-  ├─ 3-3A 單一情境 → Step 4B-1 → Step 5A → 5C → Step 6A
-  └─ 3-3B 複合情境 → Step 4B-2 + 4C → Step 5B → 5C → Step 6B
-  (5C:依各題 🔗 影響 呼叫 blocker-overview 產 overview.html — 阻塞圖 + 可開工比例 + 待決問題詳述)
+  ├─ 3-3A 單一情境 → Step 4B-1 → 5A → 5C → 6A → 7A(主檔)
+  └─ 3-3B 複合情境 → references/composite.md
+        (§1 拆分 → §2 填充 → §3 index → §4 補問清單 → 5C → §5 輸出 → §6 摘要)
+  (5C:單一/複合都跑——依各題 🔗 影響 呼叫 blocker-overview 產 overview.html — 阻塞圖 + 可開工比例 + 待決問題詳述)
 Step 6.5:詢問是否產出 PO 友善 HTML(每次必問)
 Step 7:對話輸出摘要
 ```
@@ -249,108 +250,22 @@ mkdir -p {repo}/ra-docs/{ISSUE_KEY}/files
 
 **輸入**:`{repo}/ra-docs/{ISSUE_KEY}/jira.md`(若有 `*-pdf-index.md` 或 `confluence-spec.md` 也一併參考)
 
-#### 3-1:抽取改動單元(change units)
+#### 3-1：抽取並分類 change units
+讀取 `references/requirement-types.md`，依其中的 scope / type 定義，
+將來源中的改動點抽成 `change_units`（結構見該檔）。
 
-從 jira.md 和外部規格來源(PDF 索引 / confluence-spec.md)中識別所有獨立的改動點,每個改動點記錄:
+#### 3-2：判斷單一或複合情境（路由叉口）
+- **單一情境**（滿足任一）：只有 1 個 change unit；或多個但 (scope, type) 組合全部相同
+  → 走 3-3A
+- **複合情境**：存在 2 個以上不同的 (scope, type) 組合
+  → 走 3-3B，讀取 `references/composite.md` 依其流程處理
 
-```yaml
-change_units:
-  - id: U1
-    scope: feature | patch | removal | tracking
-    type: content | interaction | permission | ga | layout
-    target: <短描述,例如「履歷投遞按鈕」>
-    summary: <一句話描述這個改動>
-    source_refs:
-      - jira.md#<段落或留言錨點>
-      - files/{confluence|axure}-spec.pdf#p.<頁碼>   # 或 confluence-spec.md#<區段錨點>（fallback 情境）
-```
+#### 3-3A：單一情境
+依 `references/requirement-types.md` 的「(scope, type) → Section 對照表」決定要填的 Section，
+進入 Step 4B-1 產出單一份 spec。
 
-**scope 判斷:**
-- 修改文案 / 小幅 UI → `patch`
-- 新增功能 / 大幅改動 → `feature`
-- 移除功能 → `removal`
-- 純埋點 → `tracking`
-
-**type 判斷：**
-- 純文案版面 → `content`
-- 操作流程按鈕 → `interaction`
-- 角色權限 → `permission`
-- 純 GA/NCC → `ga`
-- 純版面重排 → `layout`
-
-> 註:舊版的 `mixed` type 已被 Step 3-2 的複合情境判斷取代,不再需要這個分類。
-
-#### 3-2:判斷單一情境或複合情境
-
-**單一情境條件**(滿足任一):
-- 只有 1 個 change unit
-- 多個 change unit 但 (scope, type) 組合相同(例:三個都是 feature × interaction)
-
-→ 走 **3-3A 單一情境流程**
-
-**複合情境條件**:
-- 存在 2 個以上**不同的** (scope, type) 組合
-
-→ 走 **3-3B 複合情境流程**
-
-#### 3-3A:單一情境流程
-
-依下表決定填充 Section:
-
-| scope/type | 必填 | 選填 |
-|------------|------|------|
-| patch + content | 1, 3 | 15, 16 |
-| patch + interaction | 1, 4, 5 | 15, 16 |
-| patch + ga | 1, 12 | 16 |
-| feature + interaction | 1, 2, 4, 5, 15, 16 | 6, 9, 10, 11, 12 |
-| feature + permission | 1, 2, 4, 6, 15, 16 | 5, 7 |
-| removal | 1, 8, 15 | 12, 13 |
-| tracking | 1, 12 | 16 |
-
-→ 進入 Step 4B-1 產出單一份 spec
-
-#### 3-3B:複合情境流程
-
-**將 change units 按 (scope, type) 組合分群**,輸出 `sub_specs` 結構:
-
-```yaml
-sub_specs:
-  - id: 01
-    scope: feature
-    type: interaction
-    topic: batch-submit              # Agent 生成短英文 slug
-    topic_zh: 批次投遞互動           # 中文標題(用於 index)
-    change_units: [U1, U2]
-    sections: [1, 2, 4, 5, 15, 16]   # 依此組合查表決定
-
-  - id: 02
-    scope: patch
-    type: permission
-    topic: permission-control
-    topic_zh: 權限控管
-    change_units: [U3]
-    sections: [1, 2, 6, 15, 16]
-
-  - id: 03
-    scope: feature
-    type: ga
-    topic: ga-tracking
-    topic_zh: GA 追蹤
-    change_units: [U4]
-    sections: [1, 12, 16]
-```
-
-**排序原則**:
-1. `change_units` 數量最多的子情境 → `01`(視為主軸)
-2. 其他依 `change_units` 數量遞減排序
-3. 同數量時,scope 為 `feature` 的優先
-
-**topic slug 生成規則**:
-- 純英文小寫 + 連字號,長度 ≤ 25 字元
-- 取自 change unit 的 `target` 或 `summary` 主語
-- 範例:`batch-submit` / `permission-control` / `ga-tracking` / `resume-list-filter`
-
-→ 進入 Step 4B-2 + 4C 產出多份子 spec + 1 份 index
+#### 3-3B：複合情境
+完整流程（拆分結構、排序、slug、填充、index、checklist、輸出、摘要）見 `references/composite.md`。
 
 ---
 
@@ -412,73 +327,12 @@ generated_at: 2026-05-14T...
 ---
 ```
 
-##### 4B-2:複合情境填充(對每個子 spec 各填一份)
+##### 4B-2：複合情境填充
+逐子 spec 的填充流程見 `references/composite.md` §2
+（沿用 4B-1 的 7 條，僅把填充範圍限定在各子情境的 change_units）。
 
-**對 Step 3-3B 輸出的每個 `sub_specs[i]`,各自產出一份子 spec**:
-
-1. **建立子 spec 內容骨架**,使用該子情境的 `sections` 清單
-2. **限定填充範圍**:只用該子情境的 `change_units` 對應的 jira.md / 外部規格(PDF 指定頁或 confluence-spec.md)內容
-3. **跨子情境引用**:若某個 change unit 與其他子情境相關,用以下格式標註:
-   ```markdown
-   > 📎 此項與子情境 02(權限控管)相關,詳見 `VIPOP-1234-02-permission-control.spec.md`
-   ```
-4. **頂部加入 frontmatter**:
-   ```markdown
-   ---
-   parent_issue: VIPOP-1234
-   sub_id: 01
-   scope: feature
-   type: interaction
-   topic: batch-submit
-   topic_zh: 批次投遞互動
-   sections_filled: [1, 2, 4, 5, 15, 16]
-   depends_on: []            # 或 ["02"] 等
-   generated_at: 2026-05-14T...
-   ---
-   ```
-
-**填充原則(其餘)**:沿用 4B-1 的 1-7 條(包含 files/ 的引用方式)
-
-#### Step 4C:複合情境的 index 檔內容(僅複合情境)
-
-額外產出 `{ISSUE_KEY}-index.md`:
-
-```markdown
----
-issue_key: VIPOP-1234
-type: composite
-sub_spec_count: 3
-generated_at: 2026-05-14T...
----
-
-# VIPOP-1234 規格書索引
-
-## 偵測結果
-此票偵測到 3 個獨立 (scope, type) 組合,已拆分為 3 份子 spec。
-
-## 拆分理由
-- 子情境之間 scope × type 不同,合併會造成模板章節衝突
-- 拆分後 SA 可依角色分配閱讀(例:後端工程師只看 02-permission)
-
-## 子 spec 列表
-
-| # | 主題 | scope × type | 主要章節 | 依賴 |
-|---|------|-------------|---------|------|
-| 01 | 批次投遞互動 | feature × interaction | §1, §2, §4, §5, §15, §16 | — |
-| 02 | 權限控管 | patch × permission | §1, §2, §6, §15, §16 | 01 |
-| 03 | GA 追蹤 | feature × ga | §1, §12, §16 | 01 |
-
-## 共用資源
-- Jira 來源快照:`./jira.md`
-- 外部規格 PDF:`./files/`(confluence-spec.pdf / axure-spec.pdf,若有)
-- PDF 索引:`./confluence-pdf-index.md` / `./axure-pdf-index.md`(若有)
-- PO 補問清單:`./VIPOP-1234-checkList.md`
-
-## 子 spec 檔案
-- [01 批次投遞互動](./VIPOP-1234-01-batch-submit.spec.md)
-- [02 權限控管](./VIPOP-1234-02-permission-control.spec.md)
-- [03 GA 追蹤](./VIPOP-1234-03-ga-tracking.spec.md)
-```
+#### Step 4C：複合情境的 index 檔
+複合情境額外產出的 `{ISSUE_KEY}-index.md`，內容與格式見 `references/composite.md` §3。
 
 ---
 
@@ -520,72 +374,8 @@ generated_at: 2026-05-14T...
 - A-001：{假設}
 ```
 
-#### 5B:複合情境
-
-整票一份 `{ISSUE_KEY}-checkList.md`,內部按子情境分組:
-
-```markdown
-# VIPOP-1234 PO 補問清單(複合情境)
-
-> 此票拆為 3 份子 spec,問題依子情境分組。每題後標註對應的子 spec 編號。
-
-## 🔴 Blocker — 全票阻塞問題(跨子情境)
-
-**Q-001:{跨子情境的關鍵問題,例如命名規範、共用元件命名}**
-- 🔗 影響：U1、U2、U3（跨 3 個子情境）
-- 背景：{前後文}
-- [ ] A. ...
-
----
-
-## 子情境 01:批次投遞互動
-
-### 🔴 Blocker
-**Q-002:{問題}** `[子 spec 01]`
-- 🔗 影響：U1、§4、§16
-- 背景：{前後文}
-- [ ] A. ...
-
-### 🟡 Warning
-**Q-003:{問題}** `[子 spec 01]`
-- 🔗 影響：§5
-- 背景：{前後文}
-
----
-
-## 子情境 02:權限控管
-
-### 🔴 Blocker
-**Q-004:{問題}** `[子 spec 02]`
-- 🔗 影響：Q-005、U3、§2、§15
-- 背景：{前後文}
-
-### 🟡 Warning
-**Q-005:{問題}** `[子 spec 02]`
-- 🔗 影響：§15
-- 背景：{前後文}
-
----
-
-## 子情境 03:GA 追蹤
-
-### 🟡 Warning
-**Q-006:{問題}** `[子 spec 03]`
-- 🔗 影響：§12
-- 背景：{前後文}
-
----
-
-## 🟢 Info — 全票通用 AI 假設(無異議視為同意)
-- A-001:{假設}
-- A-002:{假設}
-```
-
-**分組原則**:
-- Blocker 中跨子情境的問題放最前(整票阻塞)
-- 子情境內部依 Blocker / Warning 兩級排列
-- Info 因為通常影響面較廣,統一放最後
-- 每個問題後標註 `` `[子 spec NN]` `` 方便對應
+#### 5B：複合情境
+整票一份、按子情境分組的補問清單（每題同樣要標 🔗 影響 / 背景），見 `references/composite.md` §4。
 
 ---
 
@@ -644,22 +434,8 @@ generated_at: 2026-05-14T...
   └── {ISSUE_KEY}-overview.html        ← Step 5C 產出(整票阻塞總覽 + 可開工比例,獨立 HTML,離線可開)
 ```
 
-#### 6B:複合情境輸出
-
-```
-{repo}/ra-docs/{ISSUE_KEY}/
-  ├── jira.md                                   (共用)
-  ├── confluence-pdf-index.md / axure-pdf-index.md  (共用,若有 PDF)
-  ├── files/                                    (共用)
-  ├── {ISSUE_KEY}-index.md                      ← Step 4C 產出
-  ├── {ISSUE_KEY}-01-{topic}.spec.md            ← Step 4B-2 產出(子 spec 1)
-  ├── {ISSUE_KEY}-02-{topic}.spec.md            ← Step 4B-2 產出(子 spec 2)
-  ├── {ISSUE_KEY}-03-{topic}.spec.md            ← Step 4B-2 產出(子 spec 3)
-  ├── {ISSUE_KEY}-checkList.md                  ← Step 5B 產出(共用,純補問清單)
-  └── {ISSUE_KEY}-overview.html                 ← Step 5C 產出(整票阻塞總覽 + 可開工比例,獨立 HTML,共用)
-```
-
-> 子 spec 數量取決於 Step 3-3B 偵測到的子情境數量,可能是 2 / 3 / 4 / ... 份。
+#### 6B：複合情境輸出
+複合情境的輸出檔案結構（含共用的 `{ISSUE_KEY}-overview.html`）見 `references/composite.md` §5。
 
 ---
 
@@ -738,38 +514,8 @@ generated_at: 2026-05-14T...
 📢 Template 有更新：{變動摘要一行}
 ```
 
-#### 7B:複合情境
-
-```
-✅ 複合情境規格書已產出(共 N 份子 spec)
-
-📁 檔案位置
-   {repo}/ra-docs/{ISSUE_KEY}/
-   ├── jira.md / *-pdf-index.md / files/       (來源資料庫,共用)
-   ├── {ISSUE_KEY}-index.md                    ← 從這裡開始閱讀
-   ├── {ISSUE_KEY}-01-{topic}.spec.md
-   ├── {ISSUE_KEY}-02-{topic}.spec.md
-   ├── {ISSUE_KEY}-03-{topic}.spec.md
-   ├── {ISSUE_KEY}-checkList.md                (純 PO 補問清單,共用)
-   └── {ISSUE_KEY}-overview.html               (整票阻塞總覽 + 可開工比例,獨立 HTML,共用)
-
-📊 拆分摘要
-   偵測到 3 個獨立 (scope, type) 組合,已拆為 3 份子 spec:
-   01. {topic_zh}  ({scope} × {type})  → §{sections}
-   02. {topic_zh}  ({scope} × {type})  → §{sections}
-   03. {topic_zh}  ({scope} × {type})  → §{sections}
-
-   ⚠️ 待確認項目: {N} 個(含 Blocker {X} 個)
-   📈 可開工: {可}/{總} 單元(✅{可} 可開工 / 🔴{n} 卡住 / 🟡{n} 待確認)｜卡住=等決策，非規格未寫
-
-🔴 Blocker 摘要(需優先回答)
-   {逐條列出 Blocker 問題,最多顯示 3 條,每條標註所屬子 spec}
-
-{若 axure_skip=true}
-⚠️ Axure 規格未納入
-   偵測到 Axure 連結但未提供 PDF，所有子 spec 僅基於 Jira{若有 Confluence}/Confluence{/若} 內容，
-   完成度可能不足。建議匯出 Axure PDF 後請我重跑。
-```
+#### 7B：複合情境
+複合情境的對話摘要格式見 `references/composite.md` §6。
 
 #### 7C：HTML 補充摘要(僅在 Step 6.5 使用者選擇要產出 HTML 時加上)
 
